@@ -72,6 +72,12 @@ let handleTdcl (tdcl : Parsetree.type_declaration) =
         ) label_declarations in
     let setter_accessor, makeType, labels =
       Ext_list.fold_right
+        label_declarations
+        ([],
+         (if has_optional_field then
+            Ast_compatible.arrow ~loc  (Ast_literal.type_unit ()) core_type
+          else  core_type),
+         [])
         (fun
           ({pld_name =
               {txt = label_name; loc = label_loc} as pld_name;
@@ -94,18 +100,24 @@ let handleTdcl (tdcl : Parsetree.type_declaration) =
           let maker, acc =
             if is_optional then
               let optional_type = Ast_core_type.lift_option_type pld_type in
-              (Ast_core_type.opt_arrow pld_loc label_name optional_type maker,
+              (Ast_compatible.opt_arrow ~loc:pld_loc label_name 
+#if OCAML_VERSION =~ "<4.03.0" then
+                  optional_type
+#else             pld_type  
+#end              
+
+                maker,
               let aux b pld_name = 
                 (Val.mk ~loc:pld_loc
                  (if b then pld_name else 
                   {pld_name with txt = pld_name.txt ^ "Get"})
                 ~attrs:(if b then deprecated (pld_name.Asttypes.txt) :: get_optional_attrs  
                         else get_optional_attrs) ~prim
-                (Typ.arrow ~loc "" core_type optional_type)
+                (Ast_compatible.arrow ~loc  core_type optional_type)
                 ) in 
                aux true pld_name :: aux false pld_name  :: acc )
             else
-              Typ.arrow ~loc:pld_loc label_name pld_type maker,
+              Ast_compatible.label_arrow ~loc:pld_loc label_name pld_type maker,
               (
                 let aux b pld_name = 
                 Val.mk ~loc:pld_loc 
@@ -120,7 +132,7 @@ let handleTdcl (tdcl : Parsetree.type_declaration) =
                   Return_identity,
                   Js_get {js_get_name = prim_as_name; js_get_scopes = []}
                   ))] )
-               (Typ.arrow ~loc "" core_type pld_type)
+               (Ast_compatible.arrow ~loc  core_type pld_type)
                in 
                aux true pld_name ::aux false pld_name :: acc )
           in
@@ -128,8 +140,8 @@ let handleTdcl (tdcl : Parsetree.type_declaration) =
           let acc =
             if is_current_field_mutable then
               let setter_type =
-                (Typ.arrow "" core_type
-                   (Typ.arrow ""
+                (Ast_compatible.arrow core_type
+                   (Ast_compatible.arrow
                       pld_type (* setter *)
                       (Ast_literal.type_unit ()))) in
               Val.mk ~loc:pld_loc
@@ -142,12 +154,7 @@ let handleTdcl (tdcl : Parsetree.type_declaration) =
           acc,
           maker,
           (is_optional, newLabel)::labels
-        ) label_declarations
-        ([],
-         (if has_optional_field then
-            Typ.arrow ~loc "" (Ast_literal.type_unit ()) core_type
-          else  core_type),
-         [])
+        ) 
     in
     newTdcl,
     (if is_private then
@@ -173,23 +180,21 @@ let handleTdcl (tdcl : Parsetree.type_declaration) =
 
 let handleTdclsInStr tdcls =
   let tdcls, code =
-    List.fold_right (fun tdcl (tdcls, sts)  ->
+    Ext_list.fold_right tdcls ([],[]) (fun tdcl (tdcls, sts)  ->
         match handleTdcl tdcl with
           ntdcl, value_descriptions ->
           ntdcl::tdcls,
-          Ext_list.map_append (fun x -> Str.primitive x) value_descriptions sts
-
-      ) tdcls ([],[])  in
-  Str.type_ tdcls :: code
+          Ext_list.map_append value_descriptions sts (fun x -> Str.primitive x) 
+      ) in
+Ast_compatible.rec_type_str tdcls :: code
 (* still need perform transformation for non-abstract type*)
 
 let handleTdclsInSig tdcls =
   let tdcls, code =
-    List.fold_right (fun tdcl (tdcls, sts)  ->
+    Ext_list.fold_right tdcls ([],[]) (fun tdcl (tdcls, sts)  ->
         match handleTdcl tdcl with
           ntdcl, value_descriptions ->
           ntdcl::tdcls,
-          Ext_list.map_append (fun x -> Sig.value x) value_descriptions sts
-
-      ) tdcls ([],[])  in
-  Sig.type_ tdcls :: code
+          Ext_list.map_append value_descriptions sts (fun x -> Sig.value x) 
+      ) in
+  Ast_compatible.rec_type_sig tdcls :: code

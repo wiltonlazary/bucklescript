@@ -11,13 +11,13 @@ let f v =
     fun v -> v * v 
   else  fun v -> v + v 
 
-let v  = mapi [|1;2;3 |] (Js_unsafe.fn_mk2 f)
+let v  = mapi [|1;2;3 |] (Js.Internal.fn_mk2 f)
 
-let vv  = mapi [|1;2;3 |] (Js_unsafe.fn_mk2 (+))
+let vv  = mapi [|1;2;3 |] (Js.Internal.fn_mk2 (+))
 
-let hh = map [|"1";"2";"3"|] (Js_unsafe.fn_mk1 parseInt)
+let hh = map [|"1";"2";"3"|] (Js.Internal.fn_mk1 parseInt)
 
-let u = Js_unsafe.fn_mk0 (fun _ -> 3)
+let u = Js.Internal.fn_mk0 (fun _ -> 3)
 
 let vvv = ref 0
 let fff () = 
@@ -41,17 +41,17 @@ let abc_u = fun [@bs] x y z -> abc x y z
 {[ var absc_u = abc ]}
 *)
 let () = g () [@bs]
-;; Mt.from_pair_suites __FILE__ Mt.[
+;; Mt.from_pair_suites __MODULE__ Mt.[
     __LOC__, (fun _ -> Eq(v, [|0; 1;  4 |] ));
     __LOC__, (fun _ -> Eq(vv, [|1;3;5|]));
     __LOC__, (fun _ -> Eq(hh, [|1;2;3|]));
     __LOC__, (fun _ -> Eq(  
          
-         map (map [| 1;2;3|]  (Js_unsafe.fn_mk1 (fun x -> fun y -> x + y))) 
-          (Js_unsafe.fn_mk1 @@ fun y -> (y 0)  * (y 1) ), [|2; 6 ; 12|]
+         map (map [| 1;2;3|]  (Js.Internal.fn_mk1 (fun x -> fun y -> x + y))) 
+          (Js.Internal.fn_mk1 @@ fun y -> (y 0)  * (y 1) ), [|2; 6 ; 12|]
       ));
     __LOC__, (fun _ -> Eq(
-        mapi [|1;2;3|] (Js_unsafe.fn_mk2 (fun x  -> let y =  x * x in fun i -> y + i )), 
+        mapi [|1;2;3|] (Js.Internal.fn_mk2 (fun x  -> let y =  x * x in fun i -> y + i )), 
         [|1; 5 ; 11|]        
       ))
 ]

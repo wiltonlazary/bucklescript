@@ -82,7 +82,13 @@ eq("File \"bs_min_max_test.ml\", line 34, characters 5-12", Caml_obj.caml_max(un
 
 b("File \"bs_min_max_test.ml\", line 35, characters 4-11", Caml_obj.caml_greaterequal(5, undefined));
 
-Mt.from_pair_suites("bs_min_max_test.ml", suites[0]);
+b("File \"bs_min_max_test.ml\", line 36, characters 4-11", Caml_obj.caml_lessequal(undefined, 5));
+
+b("File \"bs_min_max_test.ml\", line 37, characters 4-11", true);
+
+b("File \"bs_min_max_test.ml\", line 38, characters 4-11", true);
+
+Mt.from_pair_suites("Bs_min_max_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

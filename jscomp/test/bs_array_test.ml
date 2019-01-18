@@ -11,13 +11,13 @@ let neq loc x y =
 
 module A = Belt.Array
 module L = Belt.List
-type 'a t = 'a Js.Array.t
+type 'a t = 'a Js.Array2.t
 let () =
   [| 1; 2; 3; 4 |]
-  |> Js.Array.filter (fun  x -> x > 2)
-  |> Js.Array.mapi (fun  x i -> x + i)
-  |> Js.Array.reduce (fun  x y -> x + y) 0
-  |> Js.log
+  |. Js.Array2.filter (fun  x -> x > 2)
+  |. Js.Array2.mapi (fun  x i -> x + i)
+  |. Js.Array2.reduce (fun  x y -> x + y) 0
+  |. Js.log
 
 
 let () =
@@ -98,7 +98,8 @@ let () =
 let () =
   eq __LOC__ (A.reduceReverse [||] 100 (-)) 100;
   eq __LOC__ (A.reduceReverse [|1;2|] 100 (-)) 97;
-  eq __LOC__ (A.reduceReverse [|1;2;3;4|] 100 (-) ) 90;
+  eq __LOC__ (A.reduceReverse [|1;2;3;4|] 100 (-)) 90;
+  eq __LOC__ (A.reduceWithIndex [|1;2;3;4|] 0 (fun acc x i -> acc + x + i)) 16;
   b __LOC__
     (A.reduceReverse2 [|1;2;3|] [|1;2|] 0 (fun acc x y -> acc + x + y) = 6)
 let addone = fun [@bs] x -> x + 1
@@ -177,7 +178,7 @@ let () =
   eq __LOC__ (A.slice a ~offset:(-10) ~len:6) [|1;2;3;4;5|];
   eq __LOC__ (A.slice a ~offset:0 ~len:0) [||];
   eq __LOC__ (A.slice a ~offset:0 ~len:(-1)) [||]
-  
+
 let () =
   let a = [|1;2;3;4;5|] in
   eq __LOC__ (A.sliceToEnd a 0) [|1;2;3;4;5|];

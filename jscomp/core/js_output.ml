@@ -48,40 +48,37 @@ let make ?value ?(output_finished=False) block =
 let dummy =
     {value = None; block = []; output_finished = Dummy }
 
+(** This can be merged with 
+    {!output_of_block_and_expression} *)    
 let output_of_expression
     (continuation : continuation)
-    (should_return : Lam_compile_context.return_type)
-    (lam : Lam.t) (exp : J.expression) : t =
-  begin match continuation, should_return with
-  | EffectCall, ReturnFalse ->
-      if Lam_analysis.no_side_effects lam
-      then dummy
-      else {block = []; value  = Some exp ; output_finished = False}
-  | Declare (kind, n), ReturnFalse ->
-      make [ S.define_variable ~kind n  exp]
-  | Assign n ,ReturnFalse ->
-      make [S.assign n exp ]
-  | EffectCall, ReturnTrue _ ->
-      make [S.return_stmt  exp] ~output_finished:True
-  | (Declare _ | Assign _ ), ReturnTrue _ ->
-      make [S.unknown_lambda lam] ~output_finished:True
-  | NeedValue, _ ->
+    (exp : J.expression) ~(no_effects: bool Lazy.t)  =
+  match continuation with
+  | EffectCall  ReturnFalse ->
+    if Lazy.force no_effects 
+    then dummy
+    else {block = []; value  = Some exp ; output_finished = False}
+  | Declare (kind, n)->
+    make [ S.define_variable ~kind n  exp]
+  | Assign n  ->
+    make [S.assign n exp ]
+  | EffectCall (ReturnTrue _) ->
+    make [S.return_stmt  exp] ~output_finished:True
+  | NeedValue _ ->
     {block = []; value = Some exp; output_finished = False }
-  end
+
 
 let output_of_block_and_expression
     (continuation : continuation)
-    (should_return : Lam_compile_context.return_type)
-    (lam : Lam.t) (block : J.block) exp : t =
-  match continuation, should_return with
-  | EffectCall, ReturnFalse -> make block ~value:exp
-  | Declare (kind,n), ReturnFalse ->
-    make (block @ [ S.define_variable ~kind  n exp])
-  | Assign n, ReturnFalse -> make (block @ [S.assign n exp])
-  | EffectCall, ReturnTrue _ -> make (block @ [S.return_stmt exp]) ~output_finished:True
-  | (Declare _ | Assign _), ReturnTrue _ ->
-    make [S.unknown_lambda lam] ~output_finished:True
-  | NeedValue, (ReturnTrue _ | ReturnFalse) ->
+    (block : J.block) exp : t =
+  match continuation with
+  | EffectCall ReturnFalse -> make block ~value:exp
+  | EffectCall (ReturnTrue _) -> 
+    make (Ext_list.append_one block (S.return_stmt exp)) ~output_finished:True
+  | Declare (kind,n) ->
+    make (Ext_list.append_one block (S.define_variable ~kind  n exp))
+  | Assign n -> make (Ext_list.append_one block (S.assign n exp))
+  | NeedValue _ ->
     make block ~value:exp
 
 
@@ -170,7 +167,7 @@ let rec append_output  (x : t ) (y : t ) : t =
 
 (* Fold right is more efficient *)
 let concat (xs : t list) : t =
-  Ext_list.fold_right (fun x acc -> append_output x  acc) xs dummy
+  Ext_list.fold_right xs dummy (fun x acc -> append_output x  acc) 
 
 let to_string x   =
   Js_dump.string_of_block (output_as_block x)

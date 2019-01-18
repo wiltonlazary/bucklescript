@@ -332,7 +332,7 @@ function of_list(kvs) {
 
 var int_map_suites_000 = /* tuple */[
   "add",
-  (function () {
+  (function (param) {
       var v = of_list(/* :: */[
             /* tuple */[
               1,
@@ -362,7 +362,7 @@ var int_map_suites_000 = /* tuple */[
 var int_map_suites_001 = /* :: */[
   /* tuple */[
     "equal",
-    (function () {
+    (function (param) {
         var v = of_list(/* :: */[
               /* tuple */[
                 1,
@@ -410,7 +410,7 @@ var int_map_suites_001 = /* :: */[
   /* :: */[
     /* tuple */[
       "equal2",
-      (function () {
+      (function (param) {
           var v = of_list(/* :: */[
                 /* tuple */[
                   1,
@@ -460,7 +460,7 @@ var int_map_suites_001 = /* :: */[
     /* :: */[
       /* tuple */[
         "iteration",
-        (function () {
+        (function (param) {
             var m = /* Empty */0;
             for(var i = 0; i <= 10000; ++i){
               m = add$1(String(i), String(i), m);
@@ -488,6 +488,6 @@ var int_map_suites = /* :: */[
   int_map_suites_001
 ];
 
-Mt.from_pair_suites("map_test.ml", int_map_suites);
+Mt.from_pair_suites("Map_test", int_map_suites);
 
 /*  Not a pure module */

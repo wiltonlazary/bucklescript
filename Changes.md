@@ -1,3 +1,117 @@
+
+* potential break changes
+
+# 4.0.17
+Features
+
+- #3229 true seperate compilation, incredible perf for incremental build
+
+Fixes 
+- #3226, #3223 absolute path generated in recursive module path and `assert false`
+- #3220 ppx-flags & scoped packages
+- #3214 shadowing of js Promise constructor
+- #3213 Allow build to be re-entrant to deal with yarn issues
+
+
+
+# 4.0.10 
+Fixes
+- upstream a bug fix for refmt
+- Fix installation issues
+
+# 4.0.8
+
+
+Features
+* Support OCaml 4.06 under a config
+- #3146 support `#if 1` and `#if 0` in the built-in conditional compilation language
+- #3159 Add Node.Buffer.concat
+- #3181 sync in refmt 9fcbbca
+- #3185 better performance in compilation, not reading runtime cmj files when not needed
+
+Code gen
+- #3134 Better arity infer when using first class module as function 
+- #3169 allow _ in bs.raw so that `fun%raw a _ -> ` works
+- #3170, #3171 better code gen for bs.raw
+- #2967 bs.variadic attribute (bs.splice still works)
+Fixes
+- #3154 Fix binding `Js.Dict.get`
+- #3132 Fix `int_of_string` semantics in an edge case
+- #3142 Fix the combination of bs.as and unicode
+- #3177 Webpack dev server mode
+- #3180 clean up .gen.js/.gen.tsx for gentype
+
+Docs
+- #3133 Tweak Belt docs
+- #3136 Fix typo in react and react-lite tempaltes
+- #3161 improve perf of some functions in String module 
+
+# 4.0.7
+
+Features
+- #3072 Add List.filter/WithIndex and List.keep/WithIndex
+
+Fix
+- #3084,#3083 optimization triggers exception 
+- #3085 Wrong optimizer
+- #3105 A corner case of optional encoding
+
+Code gen
+- * #3073, #3079, #3080 no arity tweaking. Function with unit as argument will have arity one
+- #3078 better codegen for switch
+- #3088 better codegen for if statement
+
+# 4.0.6
+
+## ReasonML synced 76b27
+
+Fixes
+- #3064 upgrade `webpack-cli` to fix broken `npm run webpack`
+- #3054, #3502 fix some potential bugs in codegen
+- #3047 handle null values correctly in the devtools custom formatter
+- #3036 fix #3018 about dom in playground
+- #3017 *important* fix #3010 nodejs browser loader evaluated code twice
+
+Features
+- #3051,#3039 add List.keepWithIndex, reduceWithIndex
+- #3046 add Js.Global.setTimeOutFloat and setIntervalFloat
+
+Docs
+- #3603 add documentation to Belt.Result
+- #3031 fix typo in Belt.Option.flatMap example
+
+
+# 4.0.4
+Fixes
+- #3001 fix regressios in refmt
+- #2986 #2973 #2974 fix bsb websocket exit error
+- #2983 #2988 determinsic behavior 
+  when NINJA_ANSI_FORCED=0 no color
+  when NINJA_ANSI_FORCED=1 yes color
+
+# 4.0.3
+Fixes
+- #2956 clean re.js for genFlow proj
+- #2970 remove one obsolte error
+- #2970 address one regression from refmt
+
+# 4.0.2
+Fixes
+- #2963 fix ppx-flags quoting issue
+
+Features
+- #2951 sync up with reason 
+- #2964 customize ninja to make output less verbose
+        Add NINJA_ANSI_FORCE env variable support so that third party tools running bsb can still preserve colors  
+- #2960 add tea theme support
+- #2959 less verbose bsb output
+- #2958 make `bsb -init` more forgiving
+
+# 4.0.1
+
+Fixes:
+- #2949 fix optional regression
+- #2946 fix react-lite theme on Linux
 # 4.0.0
 
 Fixes: 

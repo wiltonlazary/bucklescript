@@ -14,7 +14,7 @@ function eq(loc, param) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -41,7 +41,7 @@ var v5 = {
       var self = this ;
       return self.x + self.y | 0;
     }),
-  hihi: (function () {
+  hihi: (function (u) {
       var self = this ;
       return self.x + self.say() | 0;
     }),
@@ -207,7 +207,7 @@ eq("File \"ppx_this_obj_field.ml\", line 103, characters 5-12", /* tuple */[
       ]
     ]);
 
-Mt.from_pair_suites("ppx_this_obj_field.ml", suites[0]);
+Mt.from_pair_suites("Ppx_this_obj_field", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

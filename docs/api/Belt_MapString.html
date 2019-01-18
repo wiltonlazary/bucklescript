@@ -49,7 +49,6 @@
 <li><a href="Belt_internalBucketsType.html">Belt_internalBucketsType</a></li>
 <li><a href="Belt_internalMapInt.html">Belt_internalMapInt</a></li>
 <li><a href="Belt_internalMapString.html">Belt_internalMapString</a></li>
-<li><a href="Belt_internalMutableAVLMap.html">Belt_internalMutableAVLMap</a></li>
 <li><a href="Belt_internalSetBuckets.html">Belt_internalSetBuckets</a></li>
 <li><a href="Belt_internalSetInt.html">Belt_internalSetInt</a></li>
 <li><a href="Belt_internalSetString.html">Belt_internalSetString</a></li>
@@ -57,7 +56,6 @@
 <li><a href="Dom_storage.html">Dom_storage</a></li>
 <li><a href="Js.html">Js</a></li>
 <li><a href="Js_array.html">Js_array</a></li>
-<li><a href="Js_boolean.html">Js_boolean</a></li>
 <li><a href="Js_cast.html">Js_cast</a></li>
 <li><a href="Js_console.html">Js_console</a></li>
 <li><a href="Js_date.html">Js_date</a></li>
@@ -66,18 +64,14 @@
 <li><a href="Js_float.html">Js_float</a></li>
 <li><a href="Js_global.html">Js_global</a></li>
 <li><a href="Js_int.html">Js_int</a></li>
-<li><a href="Js_int64.html">Js_int64</a></li>
-<li><a href="Js_internal.html">Js_internal</a></li>
 <li><a href="Js_json.html">Js_json</a></li>
 <li><a href="Js_list.html">Js_list</a></li>
 <li><a href="Js_mapperRt.html">Js_mapperRt</a></li>
 <li><a href="Js_math.html">Js_math</a></li>
-<li><a href="Js_nativeint.html">Js_nativeint</a></li>
 <li><a href="Js_null.html">Js_null</a></li>
 <li><a href="Js_null_undefined.html">Js_null_undefined</a></li>
 <li><a href="Js_obj.html">Js_obj</a></li>
 <li><a href="Js_option.html">Js_option</a></li>
-<li><a href="Js_primitive.html">Js_primitive</a></li>
 <li><a href="Js_promise.html">Js_promise</a></li>
 <li><a href="Js_re.html">Js_re</a></li>
 <li><a href="Js_result.html">Js_result</a></li>
@@ -85,7 +79,6 @@
 <li><a href="Js_typed_array.html">Js_typed_array</a></li>
 <li><a href="Js_types.html">Js_types</a></li>
 <li><a href="Js_undefined.html">Js_undefined</a></li>
-<li><a href="Js_unsafe.html">Js_unsafe</a></li>
 <li><a href="Js_vector.html">Js_vector</a></li>
 <li><a href="Node.html">Node</a></li>
 <li><a href="Node_buffer.html">Node_buffer</a></li>
@@ -140,6 +133,21 @@
  
                     </div>
                     
+                    </div>
+
+                  
+<pre><span id="VALfindFirstByU"><span class="keyword">val</span> findFirstByU</span> : <code class="type">'v <a href="Belt_MapString.html#TYPEt">t</a> -><br>       (<a href="Belt_MapString.html#TYPEkey">key</a> -> 'v -> bool [@bs]) -> (<a href="Belt_MapString.html#TYPEkey">key</a> * 'v) option</code></pre>
+<pre><span id="VALfindFirstBy"><span class="keyword">val</span> findFirstBy</span> : <code class="type">'v <a href="Belt_MapString.html#TYPEt">t</a> -><br>       (<a href="Belt_MapString.html#TYPEkey">key</a> -> 'v -> bool) -> (<a href="Belt_MapString.html#TYPEkey">key</a> * 'v) option</code></pre><div class="info ">
+                    <div class="not-examples">
+                    <code class="code">findFirstBy m p</code> uses funcion <code class="code">f</code> to find the first key value pair
+    to match predicate <code class="code">p</code>.<br>
+ 
+                    </div>
+                     <div class="examples">
+                    <pre class="example"> <pre class="codepre"><code class="code">      let s0 = fromArray ~id:(module IntCmp) [|4,"4";1,"1";2,"2,"3""|];;
+      findFirstBy s0 (fun k v -&gt; k = 4 ) = option (4, "4");;
+    </code></pre>  </pre>
+                    </div>
                     </div>
 
                   

@@ -27,14 +27,12 @@ module U = Ast_derive_util
 type tdcls = Parsetree.type_declaration list 
 
 let js_field (o : Parsetree.expression) m = 
-  Exp.apply 
+  Ast_compatible.app2
     (Exp.ident {txt = Lident "##"; loc = o.pexp_loc})
-    [ 
-      "",o; 
-      "", Exp.ident m
-    ]
-let const_int i = Exp.constant (Const_int i)
-let const_string s = Exp.constant (Const_string (s,None))
+    o
+    (Exp.ident m)
+
+
 
 
 let handle_config (config : Parsetree.expression option) = 
@@ -65,18 +63,17 @@ let noloc = Location.none
 let eraseTypeLit = "jsMapperEraseType"
 let eraseTypeExp = Exp.ident {loc = noloc; txt = Lident eraseTypeLit}
 let eraseType x = 
-  Exp.apply eraseTypeExp ["", x]
+  Ast_compatible.app1 eraseTypeExp  x
 let eraseTypeStr = 
   let any = Typ.any () in 
   Str.primitive 
     (Val.mk ~prim:["%identity"] {loc = noloc; txt = eraseTypeLit}
-       (Typ.arrow "" any any)
+       (Ast_compatible.arrow any any)
     )
 
-let app2 f arg1 arg2 = 
-  Exp.apply f ["",arg1; "", arg2]
-let app3 f arg1 arg2 arg3 = 
-  Exp.apply f ["", arg1; "", arg2; "", arg3]
+let app2 = Ast_compatible.app2
+let app3 = Ast_compatible.app3
+
 let (<=~) a b =   
   app2 (Exp.ident {loc = noloc; txt = Lident "<="}) a b 
 let (-~) a b =   
@@ -88,7 +85,7 @@ let (+~) a b =
 let (&&~) a b =   
   app2 (Exp.ident {loc = noloc; txt = Ldot(Lident "Pervasives","&&")})
     a b 
-let (->~) a b = Typ.arrow "" a b 
+let (->~) a b = Ast_compatible.arrow a b 
 let jsMapperRt =     
   Longident.Ldot (Lident "Js", "MapperRt")
 
@@ -155,7 +152,7 @@ let assertExp e =
 let derivingName = "jsConverter"
 
 (* let notApplicable loc = 
-  Location.prerr_warning 
+   Location.prerr_warning 
     loc
     (Warnings.Bs_derive_warning ( derivingName ^ " not applicable to this type")) *)
 
@@ -184,10 +181,10 @@ let init () =
                let exp_param = Exp.ident ident_param in 
                let newType,newTdcl =
                  U.new_type_of_type_declaration tdcl ("abs_" ^ name) in 
-               let newTypeStr = Str.type_ [newTdcl] in   
+               let newTypeStr = Ast_compatible.rec_type_str [newTdcl] in   
                let toJsBody body = 
                  Ast_comb.single_non_rec_value patToJs
-                   (Exp.fun_ "" None (Pat.constraint_ (Pat.var pat_param) core_type) 
+                   (Ast_compatible.fun_ (Pat.constraint_ (Pat.var pat_param) core_type) 
                       body )
                in 
                let (+>) a ty = 
@@ -197,8 +194,7 @@ let init () =
                let coerceResultToNewType e =
                  if createType then 
                    e +> newType
-                 else e    
-               in                  
+                 else e  in                  
                match tdcl.ptype_kind with  
                | Ptype_record label_declarations -> 
                  let exp = 
@@ -209,27 +205,25 @@ let init () =
                           (PStr
                              [Str.eval  
                                 (Exp.record
-                                   (List.map 
-                                      (fun ({pld_name = {loc; txt } } : Parsetree.label_declaration) -> 
+                                   (Ext_list.map label_declarations
+                                      (fun {pld_name = {loc; txt } }  -> 
                                          let label = 
                                            {Asttypes.loc; txt = Longident.Lident txt } in 
-                                         label,Exp.field exp_param label
-                                      ) label_declarations) None)]))) in 
+                                         label,Exp.field exp_param label) ) None)]))) in 
                  let toJs = 
                    toJsBody exp
                  in 
                  let obj_exp = 
                    Exp.record
-                     (List.map 
-                        (fun ({pld_name = {loc; txt } } : Parsetree.label_declaration) -> 
+                     (Ext_list.map label_declarations
+                        (fun {pld_name = {loc; txt } } -> 
                            let label = 
                              {Asttypes.loc; txt = Longident.Lident txt } in 
                            label,
-                           js_field exp_param  label
-                        ) label_declarations) None in 
+                           js_field exp_param  label) ) None in 
                  let fromJs = 
                    Ast_comb.single_non_rec_value patFromJs
-                     (Exp.fun_ "" None (Pat.var pat_param)
+                     (Ast_compatible.fun_ (Pat.var pat_param)
                         (if createType then                                             
                            (Exp.let_ Nonrecursive
                               [Vb.mk 
@@ -247,63 +241,70 @@ let init () =
                  if createType then eraseTypeStr:: newTypeStr :: rest else rest 
                | Ptype_abstract -> 
                  (match Ast_polyvar.is_enum_polyvar tdcl with 
-                  | Some row_fields -> 
-                    let attr = 
-                      Ast_polyvar.map_row_fields_into_strings loc row_fields 
-                    in 
+                  | Some row_fields ->               
                     let expConstantArray =   
                       Exp.ident {loc; txt = Longident.Lident constantArray} in 
-                    begin match attr with 
-                      | NullString result -> 
-                        let result_len = List.length result in 
-                        let exp_len = const_int result_len in 
-                        let v = [
-                          eraseTypeStr;
-                          Ast_comb.single_non_rec_value 
-                            {loc; txt = constantArray}
-                            (Exp.array
-                               (List.map (fun (i,str) -> 
-                                    Exp.tuple 
-                                      [
-                                        const_int i;
-                                        const_string str
-                                      ]
-                                  ) (List.sort (fun (a,_) (b,_) -> compare (a:int) b) result)));
-                          (
-                            toJsBody
-                              (coerceResultToNewType 
-                                 (search
-                                    exp_len
-                                    exp_param
-                                    expConstantArray 
-                                 ))
-                          );
-                          Ast_comb.single_non_rec_value
-                            patFromJs
-                            (Exp.fun_ "" None 
-                               (Pat.var pat_param)
-                               (if createType then 
-                                  revSearchAssert
-                                    exp_len
-                                    expConstantArray
-                                    (exp_param +: newType)
-                                  +>
-                                  core_type
-                                else 
-                                  revSearch                                      
-                                    exp_len
-                                    expConstantArray
-                                    exp_param                                      
-                                  +>
-                                  Ast_core_type.lift_option_type core_type
-                               )
+                    let result :  _ list = 
+                      Ext_list.map row_fields (fun tag -> 
+                          match tag with 
+                          | Rtag (label, attrs, _, []) -> 
+                            (Ast_compatible.hash_label label,
+                             match Ast_attributes.iter_process_bs_string_as_ast attrs with 
+                             | Some name -> 
+                               name
+                             | None -> 
+                               Ast_compatible.const_exp_string(Ast_compatible.label_of_name label)
                             )
-                        ] in 
-                        if createType then 
-                          newTypeStr :: v 
-                        else v 
-                      | _ -> assert false 
-                    end 
+                          | _ -> assert false (* checked by [is_enum_polyvar] *)
+                        ) in 
+                    let result_len = List.length result in 
+                    let exp_len = Ast_compatible.const_exp_int result_len in 
+                    let v = [
+                      eraseTypeStr;
+                      Ast_comb.single_non_rec_value 
+                        {loc; txt = constantArray}
+                        (Exp.array
+                           (Ext_list.map (List.sort (fun (a,_) (b,_) -> compare (a:int) b) result)
+                              (fun (i,str) -> 
+                                 Exp.tuple 
+                                   [
+                                     Ast_compatible.const_exp_int i;
+                                     str
+                                   ]
+                              ) ));
+                      (
+                        toJsBody
+                          (coerceResultToNewType 
+                             (search
+                                exp_len
+                                exp_param
+                                expConstantArray 
+                             ))
+                      );
+                      Ast_comb.single_non_rec_value
+                        patFromJs
+                        (Ast_compatible.fun_
+                           (Pat.var pat_param)
+                           (if createType then 
+                              revSearchAssert
+                                exp_len
+                                expConstantArray
+                                (exp_param +: newType)
+                              +>
+                              core_type
+                            else 
+                              revSearch                                      
+                                exp_len
+                                expConstantArray
+                                exp_param                                      
+                              +>
+                              Ast_core_type.lift_option_type core_type
+                           )
+                        )
+                    ] in 
+                    if createType then 
+                      newTypeStr :: v 
+                    else v 
                   | None -> 
                     U.notApplicable 
                       tdcl.Parsetree.ptype_loc 
@@ -317,12 +318,12 @@ let init () =
                    match xs with 
                    | `New xs ->
                      let constantArrayExp = Exp.ident {loc; txt = Lident constantArray} in
-                     let exp_len = const_int (List.length ctors) in
+                     let exp_len = Ast_compatible.const_exp_int (List.length ctors) in
                      let v = [
                        eraseTypeStr;
                        Ast_comb.single_non_rec_value 
                          {loc; txt = constantArray}
-                         (Exp.array (List.map (fun i -> const_int i) xs ))
+                         (Ast_compatible.const_exp_int_list_as_array xs)
                        ;
                        toJsBody                        
                          (
@@ -334,7 +335,7 @@ let init () =
                        ;
                        Ast_comb.single_non_rec_value
                          patFromJs
-                         (Exp.fun_ "" None 
+                         (Ast_compatible.fun_
                             (Pat.var pat_param)
                             (
                               if createType then 
@@ -361,16 +362,16 @@ let init () =
                        [  eraseTypeStr;
                           toJsBody (
                             coerceResultToNewType
-                              (eraseType exp_param +~ const_int offset)
+                              (eraseType exp_param +~ Ast_compatible.const_exp_int offset)
                           )
                           ;
                           let len = List.length ctors in 
-                          let range_low = const_int (offset + 0) in 
-                          let range_upper = const_int (offset + len - 1) in 
+                          let range_low = Ast_compatible.const_exp_int (offset + 0) in 
+                          let range_upper = Ast_compatible.const_exp_int (offset + len - 1) in 
 
                           Ast_comb.single_non_rec_value
                             {loc ; txt = fromJs}
-                            (Exp.fun_ "" None 
+                            (Ast_compatible.fun_
                                (Pat.var pat_param)
                                (if createType then 
                                   (Exp.let_ Nonrecursive
@@ -383,16 +384,16 @@ let init () =
                                          (assertExp 
                                             ((exp_param <=~ range_upper) &&~ (range_low <=~ exp_param))
                                          )
-                                         (exp_param  -~ const_int offset))
+                                         (exp_param  -~ Ast_compatible.const_exp_int offset))
                                   )
                                   +>
                                   core_type
                                 else
-                                  (Exp.ifthenelse
-                                     ( (exp_param <=~ range_upper) &&~ (range_low <=~ exp_param))
-                                     (Exp.construct {loc; txt = Lident "Some"} 
-                                        ( Some (exp_param -~ const_int offset)))
-                                     (Some (Exp.construct {loc; txt = Lident "None"} None)))
+                                  Exp.ifthenelse
+                                    ( (exp_param <=~ range_upper) &&~ (range_low <=~ exp_param))
+                                    (Exp.construct {loc; txt = Ast_literal.predef_some} 
+                                       ( Some (exp_param -~ Ast_compatible.const_exp_int offset)))
+                                    (Some (Exp.construct {loc; txt = Ast_literal.predef_none} None))
                                   +>
                                   Ast_core_type.lift_option_type core_type
                                )
@@ -402,15 +403,15 @@ let init () =
                  else 
                    begin 
                      U.notApplicable 
-                     tdcl.Parsetree.ptype_loc 
-                     derivingName;
+                       tdcl.Parsetree.ptype_loc 
+                       derivingName;
                      []  
                    end
                | Ptype_open -> 
                  U.notApplicable tdcl.Parsetree.ptype_loc 
-                 derivingName;
+                   derivingName;
                  [] in 
-             Ext_list.flat_map handle_tdcl tdcls 
+             Ext_list.flat_map tdcls handle_tdcl
            );
          signature_gen = 
            (fun (tdcls : tdcls) _ -> 
@@ -424,21 +425,20 @@ let init () =
                 let patToJs = {Asttypes.loc; txt = toJs} in 
                 let patFromJs = {Asttypes.loc; txt = fromJs} in 
                 let toJsType result = 
-                  Ast_comb.single_non_rec_val patToJs (Typ.arrow "" core_type result) in
+                  Ast_comb.single_non_rec_val patToJs (Ast_compatible.arrow core_type result) in
                 let newType,newTdcl =
                   U.new_type_of_type_declaration tdcl ("abs_" ^ name) in 
-                let newTypeStr = Sig.type_ [newTdcl] in                     
+                let newTypeStr = Ast_compatible.rec_type_sig [newTdcl] in                     
                 let (+?) v rest = if createType then v :: rest else rest in 
                 match tdcl.ptype_kind with  
                 | Ptype_record label_declarations ->            
 
                   let objType flag =                     
                     Ast_comb.to_js_type loc @@  
-                    Typ.object_
-                      (List.map 
-                         (fun ({pld_name = {loc; txt }; pld_type } : Parsetree.label_declaration) -> 
-                            txt, [], pld_type
-                         ) label_declarations) 
+                    Ast_compatible.object_
+                      (Ext_list.map label_declarations
+                         (fun {pld_name = {loc; txt }; pld_type } -> 
+                            txt, [], pld_type)) 
                       flag in                   
                   newTypeStr +? 
                   [
@@ -466,12 +466,11 @@ let init () =
 
                    | None -> 
                      U.notApplicable tdcl.Parsetree.ptype_loc 
-                     derivingName;
+                       derivingName;
                      [])
 
                 | Ptype_variant ctors 
                   -> 
-
                   if Ast_polyvar.is_enum_constructors ctors then 
                     let ty1 = 
                       if createType then newType 
@@ -488,19 +487,19 @@ let init () =
                     ] 
 
                   else 
-                  begin
-                    U.notApplicable tdcl.Parsetree.ptype_loc 
-                    derivingName;
-                    []
-                  end
+                    begin
+                      U.notApplicable tdcl.Parsetree.ptype_loc 
+                        derivingName;
+                      []
+                    end
                 | Ptype_open -> 
                   U.notApplicable tdcl.Parsetree.ptype_loc 
-                  derivingName;
+                    derivingName;
                   [] in 
-              Ext_list.flat_map handle_tdcl tdcls 
+              Ext_list.flat_map tdcls handle_tdcl
 
            );
          expression_gen = None 
        } 
     )
-;
+  ;

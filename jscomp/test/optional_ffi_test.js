@@ -2,7 +2,7 @@
 
 var Mt = require("./mt.js");
 var Block = require("../../lib/js/block.js");
-var Js_primitive = require("../../lib/js/js_primitive.js");
+var Caml_option = require("../../lib/js/caml_option.js");
 
 var suites = /* record */[/* contents : [] */0];
 
@@ -15,7 +15,7 @@ function eq(loc, param) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -62,7 +62,7 @@ function bug_to_fix(f, x) {
 }
 
 function bug_to_fix2(f, x) {
-  return hey(Js_primitive.option_get(f(x)), 3);
+  return hey(Caml_option.option_get(f(x)), 3);
 }
 
 var counter2 = /* record */[/* contents */0];
@@ -127,7 +127,7 @@ var pair$1 = /* tuple */[
 
 eq("File \"optional_ffi_test.ml\", line 58, characters 5-12", pair$1);
 
-Mt.from_pair_suites("optional_ffi_test.ml", suites[0]);
+Mt.from_pair_suites("Optional_ffi_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

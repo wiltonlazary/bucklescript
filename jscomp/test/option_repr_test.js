@@ -3,7 +3,7 @@
 var Mt = require("./mt.js");
 var Caml_obj = require("../../lib/js/caml_obj.js");
 var Belt_List = require("../../lib/js/belt_List.js");
-var Js_primitive = require("../../lib/js/js_primitive.js");
+var Caml_option = require("../../lib/js/caml_option.js");
 
 var suites = /* record */[/* contents : [] */0];
 
@@ -34,7 +34,7 @@ function f1(u) {
   }
 }
 
-function f2(x, y, $staropt$star, _) {
+function f2(x, y, $staropt$star, param) {
   var z = $staropt$star !== undefined ? $staropt$star : 3;
   console.log(x);
   if (y !== undefined) {
@@ -60,21 +60,21 @@ function f4(x) {
   }
 }
 
-function f5() {
+function f5(a) {
   return false;
 }
 
-function f6() {
+function f6(a) {
   return true;
 }
 
-var f10 = Js_primitive.some(Js_primitive.some(Js_primitive.some(Js_primitive.some(undefined))));
+var f10 = Caml_option.some(Caml_option.some(Caml_option.some(Caml_option.some(undefined))));
 
-var f11 = Js_primitive.some(f10);
+var f11 = Caml_option.some(f10);
 
 var randomized = /* record */[/* contents */false];
 
-function create($staropt$star, _) {
+function create($staropt$star, param) {
   var random = $staropt$star !== undefined ? $staropt$star : randomized[0];
   if (random) {
     return 2;
@@ -85,7 +85,7 @@ function create($staropt$star, _) {
 
 var ff = create(false, /* () */0);
 
-function f13($staropt$star, $staropt$star$1, _) {
+function f13($staropt$star, $staropt$star$1, param) {
   var x = $staropt$star !== undefined ? $staropt$star : 3;
   var y = $staropt$star$1 !== undefined ? $staropt$star$1 : 4;
   return x + y | 0;
@@ -105,7 +105,7 @@ var length_10_id = Belt_List.makeBy(10, (function (x) {
         return x;
       }));
 
-function f13$1() {
+function f13$1(param) {
   return Caml_obj.caml_equal(Belt_List.take(length_10_id, 8), /* :: */[
               1,
               /* :: */[
@@ -120,7 +120,13 @@ function f13$1() {
 
 b("File \"option_repr_test.ml\", line 94, characters 4-11", Caml_obj.caml_lessthan(undefined, null));
 
-b("File \"option_repr_test.ml\", line 95, characters 4-11", Caml_obj.caml_lessthan(undefined, Js_primitive.some(undefined)));
+b("File \"option_repr_test.ml\", line 95, characters 4-11", !Caml_obj.caml_greaterthan(undefined, null));
+
+b("File \"option_repr_test.ml\", line 96, characters 4-11", Caml_obj.caml_greaterthan(null, undefined));
+
+b("File \"option_repr_test.ml\", line 97, characters 4-11", Caml_obj.caml_lessthan(undefined, Caml_option.some(undefined)));
+
+b("File \"option_repr_test.ml\", line 98, characters 4-11", Caml_obj.caml_greaterthan(Caml_option.some(undefined), undefined));
 
 console.log(6, undefined);
 
@@ -162,33 +168,33 @@ function all_true(xs) {
               }));
 }
 
-var xs_000 = gtx(Js_primitive.some(null), Js_primitive.some(undefined));
+var xs_000 = gtx(Caml_option.some(null), Caml_option.some(undefined));
 
 var xs = /* :: */[
   xs_000,
   /* [] */0
 ];
 
-b("File \"option_repr_test.ml\", line 118, characters 5-12", Belt_List.every(xs, (function (x) {
+b("File \"option_repr_test.ml\", line 121, characters 5-12", Belt_List.every(xs, (function (x) {
             return x;
           })));
 
-var xs_000$1 = ltx(Js_primitive.some(undefined), 3);
+var xs_000$1 = ltx(Caml_option.some(undefined), 3);
 
 var xs_001 = /* :: */[
-  ltx(Js_primitive.some(undefined), Js_primitive.some(Js_primitive.some(undefined))),
+  ltx(Caml_option.some(undefined), Caml_option.some(Caml_option.some(undefined))),
   /* :: */[
-    ltx(Js_primitive.some(undefined), "3"),
+    ltx(Caml_option.some(undefined), "3"),
     /* :: */[
-      ltx(Js_primitive.some(undefined), true),
+      ltx(Caml_option.some(undefined), true),
       /* :: */[
-        ltx(Js_primitive.some(undefined), false),
+        ltx(Caml_option.some(undefined), false),
         /* :: */[
           ltx(false, true),
           /* :: */[
             ltx(false, true),
             /* :: */[
-              ltx(undefined, Js_primitive.some(undefined)),
+              ltx(undefined, Caml_option.some(undefined)),
               /* :: */[
                 ltx(undefined, null),
                 /* :: */[
@@ -214,7 +220,7 @@ var xs$1 = /* :: */[
   xs_001
 ];
 
-b("File \"option_repr_test.ml\", line 124, characters 5-12", Belt_List.every(xs$1, (function (x) {
+b("File \"option_repr_test.ml\", line 127, characters 5-12", Belt_List.every(xs$1, (function (x) {
             return x;
           })));
 
@@ -223,11 +229,11 @@ var xs_000$2 = eqx(undefined, undefined);
 var xs_001$1 = /* :: */[
   neqx(undefined, null),
   /* :: */[
-    eqx(Js_primitive.some(undefined), Js_primitive.some(undefined)),
+    eqx(Caml_option.some(undefined), Caml_option.some(undefined)),
     /* :: */[
-      eqx(Js_primitive.some(Js_primitive.some(undefined)), Js_primitive.some(Js_primitive.some(undefined))),
+      eqx(Caml_option.some(Caml_option.some(undefined)), Caml_option.some(Caml_option.some(undefined))),
       /* :: */[
-        neqx(Js_primitive.some(Js_primitive.some(Js_primitive.some(undefined))), Js_primitive.some(Js_primitive.some(undefined))),
+        neqx(Caml_option.some(Caml_option.some(Caml_option.some(undefined))), Caml_option.some(Caml_option.some(undefined))),
         /* [] */0
       ]
     ]
@@ -239,17 +245,17 @@ var xs$2 = /* :: */[
   xs_001$1
 ];
 
-b("File \"option_repr_test.ml\", line 140, characters 5-12", Belt_List.every(xs$2, (function (x) {
+b("File \"option_repr_test.ml\", line 143, characters 5-12", Belt_List.every(xs$2, (function (x) {
             return x;
           })));
 
-Mt.from_pair_suites("option_repr_test.ml", suites[0]);
+Mt.from_pair_suites("Option_repr_test", suites[0]);
 
 var f7 = undefined;
 
-var f8 = Js_primitive.some(undefined);
+var f8 = Caml_option.some(undefined);
 
-var f9 = Js_primitive.some(Js_primitive.some(undefined));
+var f9 = Caml_option.some(Caml_option.some(undefined));
 
 var N = 0;
 

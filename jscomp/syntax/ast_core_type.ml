@@ -24,46 +24,18 @@
 
 type t = Parsetree.core_type
 
-type arg_label =
-  | Label of string
-  | Optional of string
-  | Empty (* it will be ignored , side effect will be recorded *)
 
 
 
-let extract_option_type_exn (ty : t) =
-  begin match ty with
-    | {ptyp_desc =
-         Ptyp_constr
-           ({txt =
-               Ldot (Lident "*predef*", "option")
-               | Lident "option"
-            },
-            [ty])}
-      ->
-      ty
-    | _ -> assert false
-  end
 
-let extract_option_type (ty : t) =
-  match ty.ptyp_desc with
-  | Ptyp_constr(
-    {txt = (Ldot (Lident "*predef*", "option")
-      | Lident "option")},
-     [ty]) -> Some ty
-  | _ -> None
 
-let predef_option : Longident.t =
-  Longident.Ldot (Lident "*predef*", "option")
 
-let predef_int : Longident.t =
-  Ldot (Lident "*predef*", "int")
 
 
 let lift_option_type ({ptyp_loc} as ty:t) : t =
   {ptyp_desc =
      Ptyp_constr(
-       {txt = predef_option;
+       {txt = Ast_literal.predef_option;
         loc = ptyp_loc}
         , [ty]);
         ptyp_loc = ptyp_loc;
@@ -114,14 +86,8 @@ let is_user_int (ty : t) =
   | Ptyp_constr({txt = Lident "int"},[]) -> true
   | _ -> false
 
-let is_optional_label l =
-  String.length l > 0 && l.[0] = '?'
 
-let label_name l : arg_label =
-  if l = "" then Empty else
-  if is_optional_label l
-  then Optional (String.sub l 1 (String.length l - 1))
-  else Label l
+
 
 
 (* Note that OCaml type checker will not allow arbitrary
@@ -138,21 +104,21 @@ let from_labels ~loc arity labels
          Typ.var ~loc ("a" ^ string_of_int i)))) in
   let result_type =
     Ast_comb.to_js_type loc
-      (Typ.object_ ~loc
-         (Ext_list.map2 (fun x y -> x.Asttypes.txt ,[], y) labels tyvars) Closed)
+      (Ast_compatible.object_ ~loc
+         (Ext_list.map2 labels tyvars (fun x y -> x.Asttypes.txt ,[], y)) Closed)
   in
-  Ext_list.fold_right2
-    (fun {Asttypes.loc ; txt = label }
-      tyvar acc -> Typ.arrow ~loc label tyvar acc) labels tyvars  result_type
+  Ext_list.fold_right2 labels tyvars  result_type
+    (fun label (* {loc ; txt = label }*)
+      tyvar acc -> 
+      Ast_compatible.label_arrow ~loc:label.loc label.txt tyvar acc) 
 
 
 let make_obj ~loc xs =
   Ast_comb.to_js_type loc
-    (Ast_helper.Typ.object_  ~loc xs Closed)
+    (Ast_compatible.object_  ~loc xs Closed)
 
 
-let opt_arrow loc label ty1 ty2 =
-  Typ.arrow ~loc ("?" ^ label) ty1 ty2
+
 (**
 
 {[ 'a . 'a -> 'b ]}
@@ -169,15 +135,19 @@ let rec get_uncurry_arity_aux  (ty : t) acc =
     | _ -> acc
 
 (**
-   {[ unit -> 'a1 -> a2']}  arity 2
    {[ unit -> 'b ]} return arity 0
+   {[ unit -> 'a1 -> a2']} arity 2
    {[ 'a1 -> 'a2 -> ... 'aN -> 'b ]} return arity N
 *)
 let get_uncurry_arity (ty : t ) =
   match ty.ptyp_desc  with
-  | Ptyp_arrow("", {ptyp_desc = (Ptyp_constr ({txt = Lident "unit"}, []))},
-    ({ptyp_desc = Ptyp_arrow _ } as rest  )) -> `Arity (get_uncurry_arity_aux rest 1 )
-  | Ptyp_arrow("", {ptyp_desc = (Ptyp_constr ({txt = Lident "unit"}, []))}, _) -> `Arity 0
+  | Ptyp_arrow(arg_label, {ptyp_desc = (Ptyp_constr ({txt = Lident "unit"}, []))},
+     rest  ) when Ast_compatible.is_arg_label_simple arg_label -> 
+     begin match rest with 
+     | {ptyp_desc = Ptyp_arrow _ } ->  
+      `Arity (get_uncurry_arity_aux rest 1 )
+    | _ -> `Arity 0 
+    end
   | Ptyp_arrow(_,_,rest ) ->
     `Arity(get_uncurry_arity_aux rest 1)
   | _ -> `Not_function
@@ -196,3 +166,16 @@ let list_of_arrow (ty : t) =
       Bs_syntaxerr.err ty.ptyp_loc Unhandled_poly_type
     | return_type -> ty, List.rev acc
   in aux ty []
+
+
+(* type arg_label =
+  | Nolabel (* it will be ignored , side effect will be recorded *)
+  | Labelled of string
+  | Optional of string
+  
+
+let label_name l : arg_label =
+  if l = "" then Nolabel else
+  if is_optional_label l
+  then Optional (String.sub l 1 (String.length l - 1))
+  else Labelled l   *)

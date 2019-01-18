@@ -27,8 +27,13 @@
 
 
 
-
-
+(* open recursion is hard
+  Take cond for example:
+  CHECK? Trick semantics difference 
+  super#statement (S.if_ a ([ (\* self#statement *\) (S.exp b) ]) 
+     ~else_:([self#statement (S.exp c)]) 
+                 ) 
+*)
 module E = Js_exp_make
 module S = Js_stmt_make 
 
@@ -38,15 +43,10 @@ let flatten_map =
     method! statement x = 
       match x.statement_desc with 
       |  Exp ({expression_desc = Seq _; _} as v) ->
-          (S.block ( List.rev_map (self#statement) (Js_analyzer.rev_flatten_seq v )))
+          S.block ( List.rev_map self#statement (Js_analyzer.rev_flatten_seq v ))
       |  Exp ({expression_desc = Cond(a,b,c); comment} ) -> 
-          (* Note that we need apply [self#statement] recursively *)
           { statement_desc = If (a, [ self#statement (S.exp b)],  
                                  Some [ self#statement (S.exp c)]); comment}
-          (* CHECK? Trick semantics difference *)
-          (* super#statement (S.if_ a ([ (\* self#statement *\) (S.exp b) ]) *)
-          (*     ~else_:([self#statement (S.exp c)]) *)
-          (*                 ) *)
 
       |  Exp ({expression_desc = Bin(Eq, a, ({expression_desc = Seq _; _ } as v)); _} )
         ->
@@ -54,8 +54,10 @@ let flatten_map =
           begin match block with
           | {statement_desc = Exp last_one ; _} :: rest_rev
             ->  
-              S.block (Ext_list.rev_map_append (self#statement) rest_rev 
-                [self#statement @@ S.exp (E.assign a  last_one)])
+              S.block (Ext_list.rev_map_append  rest_rev 
+                [self#statement @@ S.exp (E.assign a  last_one)]
+                self#statement
+              )
                 (* TODO: here we introduce a block, should avoid it *)
               (* super#statement *)
               (*   (S.block (List.rev_append rest_rev [S.exp (E.assign a  last_one)])) *)
@@ -73,7 +75,7 @@ let flatten_map =
           | {statement_desc = Exp last_one ; _} :: rest_rev
             ->  
               super#statement 
-                (S.block (Ext_list.rev_map_append (self#statement) rest_rev [S.return_stmt last_one]))
+                (S.block (Ext_list.rev_map_append rest_rev [S.return_stmt last_one] (self#statement)))
           | _ -> assert false
           end
       | Block [x]

@@ -15,7 +15,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -205,7 +205,7 @@ eq("File \"js_list_test.ml\", line 32, characters 7-14", true, Js_list.equal((fu
             return x === y;
           }), vvv, Js_vector.toList(Js_vector.init(10000, f$1))));
 
-Mt.from_pair_suites("js_list_test.ml", suites[0]);
+Mt.from_pair_suites("Js_list_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

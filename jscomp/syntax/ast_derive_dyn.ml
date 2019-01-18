@@ -32,7 +32,7 @@ let current_name_set : string list ref = ref []
 
 let loc = Location.none 
 
-let (+>) = Typ.arrow ""
+let (+>) = Ast_compatible.arrow
 
 type lid = Longident.t Asttypes.loc
 
@@ -72,9 +72,9 @@ let js_dyn_shape_of_record () =
   Exp.ident {txt = Ldot (Lident js_dyn, shape_of_record); loc}
 
 let js_dyn_to_value_type ty  = 
-  Typ.arrow "" ty  (js_dyn_value_type ())
+  Ast_compatible.arrow ty  (js_dyn_value_type ())
 let js_dyn_to_value_uncurry_type ty = 
-  Typ.arrow "" ~attrs:bs_attrs ty (js_dyn_value_type ())
+  Ast_compatible.arrow ~attrs:bs_attrs ty (js_dyn_value_type ())
 
 let js_dyn_variant_to_value () = 
   Exp.ident {txt = Ldot (Lident js_dyn, variant_to_value); loc}
@@ -89,7 +89,7 @@ let js_dyn_tuple_to_value i =
 
 
 let bs_apply1 f v = 
-  Exp.apply f ["",v] ~attrs:bs_attrs
+  Ast_compatible.app1 f v ~attrs:bs_attrs
 
 
 
@@ -136,8 +136,8 @@ let rec exp_of_core_type prefix
     Exp.ident (fn_of_lid prefix lid)       
   | Ptyp_constr (lid, params)
     -> 
-    Exp.apply (Exp.ident (fn_of_lid prefix lid))
-      (Ext_list.map (fun x -> "",exp_of_core_type prefix x ) params) 
+    Ast_compatible.apply_simple (Exp.ident (fn_of_lid prefix lid))
+      (Ext_list.map  params (fun x -> exp_of_core_type prefix x )) 
   | Ptyp_tuple lst -> 
     begin match lst with 
     | [x] -> exp_of_core_type prefix x 
@@ -148,8 +148,8 @@ let rec exp_of_core_type prefix
         Location.raise_errorf ~loc "tuple arity > 6 not supported yet"
       else 
         let fn = js_dyn_tuple_to_value len in 
-        let args = Ext_list.map (fun x -> "", exp_of_core_type prefix x) lst in 
-        Exp.apply fn args 
+        let args = Ext_list.map  lst (fun x -> exp_of_core_type prefix x) in 
+        Ast_compatible.apply_simple fn args 
     end
 
 
@@ -162,7 +162,7 @@ let exp_of_core_type_exprs
     (core_type_exprs : (Parsetree.core_type * Parsetree.expression) list) 
   : Parsetree.expression  = 
     Exp.array 
-      (Ext_list.fold_right (fun (core_type, exp) acc -> 
+      (Ext_list.fold_right core_type_exprs [] (fun (core_type, exp) acc -> 
            bs_apply1
              (exp_of_core_type to_value  core_type) exp
 
@@ -178,10 +178,16 @@ let exp_of_core_type_exprs
               ]}
            *)
            :: acc 
-       ) core_type_exprs [])
+       ) )
 
 let destruct_constructor_declaration 
     ({pcd_name = {txt ;loc}; pcd_args} : Parsetree.constructor_declaration)  = 
+#if OCAML_VERSION =~ ">4.03.0" then
+  let pcd_args = 
+    match pcd_args with 
+    | Pcstr_tuple pcd_args -> pcd_args
+    | Pcstr_record _ -> assert false in 
+#end    
   let last_i, core_type_exprs, pats = 
     List.fold_left (fun (i,core_type_exps, pats) core_type -> 
       let  txt = "a" ^ string_of_int i  in
@@ -200,30 +206,30 @@ let destruct_constructor_declaration
 
 let case_of_ctdcl (ctdcls : Parsetree.constructor_declaration list) = 
     Exp.function_ 
-      (List.mapi (fun i ctdcl -> 
+      (Ext_list.mapi ctdcls (fun i ctdcl -> 
            let pat, core_type_exprs = destruct_constructor_declaration ctdcl in 
            Exp.case pat 
-             (Exp.apply 
+             (Ast_compatible.app3
                 (js_dyn_variant_to_value ())
-                [("", Exp.ident {txt = Lident shape ; loc});
-                 ("", Ast_derive_util.lift_int i);
-                 ("", exp_of_core_type_exprs core_type_exprs);
-                ]
-             )) ctdcls
+                ( Exp.ident {txt = Lident shape ; loc})
+                ( Ast_compatible.const_exp_int i)
+                ( exp_of_core_type_exprs core_type_exprs)
+                
+             )) 
       )
 let record args = 
-  Exp.apply 
+  Ast_compatible.app2 
     (Exp.ident {txt = Ldot (Lident js_dyn, record_to_value ); loc})
-    ["", Exp.ident {txt = Lident shape ; loc};
-     ("",  args)
-    ]      
+    (Exp.ident {txt = Lident shape ; loc})
+    args
+    
 
 
 let fun_1 name = 
-  Exp.fun_ "" None ~attrs:bs_attrs 
+  Ast_compatible.fun_ ~attrs:bs_attrs 
     (Pat.var {txt = "x"; loc})
-    (Exp.apply (Exp.ident name)
-       ["",(Exp.ident {txt = Lident "x"; loc})])
+    (Ast_compatible.app1 (Exp.ident name)
+       (Exp.ident {txt = Lident "x"; loc}))
 
 let record_exp  name core_type  labels : Ast_structure.t = 
   let arg_name : string = "args" in
@@ -233,8 +239,8 @@ let record_exp  name core_type  labels : Ast_structure.t =
   [Str.value Nonrecursive @@ 
    [Vb.mk 
      (Pat.var {txt = shape;  loc}) 
-     (Exp.apply (js_dyn_shape_of_record ())
-        ["", (Ast_derive_util.lift_string_list_to_array labels)]
+     (Ast_compatible.app1 (js_dyn_shape_of_record ())
+        (Ast_compatible.const_exp_string_list_as_array labels)
      ) ];
    Str.value Nonrecursive @@ 
    [Vb.mk (Pat.var {txt = name ^ to_value_  ; loc })
@@ -278,20 +284,26 @@ let init ()  =
                      } -> 
                      if explict_nonrec then 
                        let names, arities = 
-                         Ext_list.fold_right 
-                           (fun (ctdcl : Parsetree.constructor_declaration) 
+                         Ext_list.fold_right cd ([],[])
+                           (fun {pcd_name = {txt}; pcd_args} 
                              (names,arities) -> 
-                             ctdcl.pcd_name.txt :: names, 
-                             List.length ctdcl.pcd_args :: arities
-                           ) cd ([],[]) in 
+#if OCAML_VERSION =~ ">4.03.0" then                               
+                             let pcd_args = 
+                              match pcd_args with 
+                              | Pcstr_tuple pcd_args -> pcd_args 
+                              | Pcstr_record _ -> assert false in 
+#end                              
+                             txt :: names, 
+                             List.length pcd_args :: arities
+                           )  in 
                        constraint_ 
                          [
                            Str.value Nonrecursive @@ 
                            [Vb.mk (Pat.var {txt = shape ; loc})
-                              (      Exp.apply (js_dyn_shape_of_variant ())
-                                       [ "", (Ast_derive_util.lift_string_list_to_array names);
-                                         "", (Ast_derive_util.lift_int_list_to_array arities )
-                                       ])];
+                              (      Ast_compatible.app2 (js_dyn_shape_of_variant ())
+                                       (Ast_compatible.const_exp_string_list_as_array names)
+                                       (Ast_compatible.const_exp_int_list_as_array arities )
+                                       )];
                            Str.value Nonrecursive @@ 
                            [Vb.mk (Pat.var {txt = name ^ to_value_  ; loc})
                               (case_of_ctdcl cd)
@@ -342,7 +354,7 @@ let init ()  =
                  let loc = tdcl.ptype_loc in 
                  Sig.value ~loc (Val.mk {txt = name ^ to_value  ; loc}
                                    (js_dyn_to_value_uncurry_type core_type)) in 
-               Ext_list.map handle_tdcl tdcls 
+               Ext_list.map tdcls handle_tdcl 
 
              end
 

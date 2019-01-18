@@ -45,7 +45,6 @@ let merge_module_info_map acc sources : Bsb_db.t =
 let bsc_exe = "bsc.exe"
 let bsb_helper_exe = "bsb_helper.exe"
 let dash_i = "-I"
-let dash_ppx = "-ppx"
 
 
 
@@ -59,6 +58,7 @@ let output_ninja_and_namespace_map
       external_includes;
       bsc_flags ; 
       ppx_flags;
+      pp_flags ;
       bs_dependencies;
       bs_dev_dependencies;
       refmt;
@@ -78,17 +78,17 @@ let output_ninja_and_namespace_map
   let bsc = bsc_dir // bsc_exe in   (* The path to [bsc.exe] independent of config  *)
   let bsdep = bsc_dir // bsb_helper_exe in (* The path to [bsb_heler.exe] *)
   let cwd_lib_bs = cwd // Bsb_config.lib_bs in 
-  let ppx_flags = Bsb_build_util.flag_concat dash_ppx ppx_flags in
+  let ppx_flags = Bsb_build_util.ppx_flags ppx_flags in
   let bsc_flags =  String.concat Ext_string.single_space bsc_flags in
   let refmt_flags = String.concat Ext_string.single_space refmt_flags in
   let oc = open_out_bin (cwd_lib_bs // Literals.build_ninja) in
   let bs_package_includes = 
-    Bsb_build_util.flag_concat dash_i @@ Ext_list.map 
-      (fun (x : Bsb_config_types.dependency) -> x.package_install_path) bs_dependencies
+    Bsb_build_util.include_dirs @@ Ext_list.map bs_dependencies
+      (fun x  -> x.package_install_path) 
   in
   let bs_package_dev_includes = 
-    Bsb_build_util.flag_concat dash_i @@ Ext_list.map 
-      (fun (x : Bsb_config_types.dependency) -> x.package_install_path) bs_dev_dependencies
+    Bsb_build_util.include_dirs @@ Ext_list.map bs_dev_dependencies
+      (fun x -> x.package_install_path) 
   in  
   let has_reason_files = ref false in 
   let bs_package_flags , namespace_flag = 
@@ -135,6 +135,10 @@ let output_ninja_and_namespace_map
         |] oc 
   in   
   let () = 
+    Ext_option.iter pp_flags (fun flag ->
+      Bsb_ninja_util.output_kv Bsb_ninja_global_vars.pp_flags
+      (Bsb_build_util.pp_flag flag) oc 
+    );
     Bsb_ninja_util.output_kvs
       [|
         Bsb_ninja_global_vars.bs_package_flags, bs_package_flags ; 
@@ -148,7 +152,8 @@ let output_ninja_and_namespace_map
         Bsb_ninja_global_vars.bs_package_dev_includes, bs_package_dev_includes;  
         Bsb_ninja_global_vars.namespace , namespace_flag ; 
         Bsb_build_schemas.bsb_dir_group, "0"  (*TODO: avoid name conflict in the future *)
-      |] oc in
+      |] oc 
+  in      
   let all_includes acc  = 
     match external_includes with 
     | [] -> acc 
@@ -158,15 +163,15 @@ let output_ninja_and_namespace_map
          [lib/bs], [build] is different from merlin though
       *)
       Ext_list.map_append 
-        (fun x -> if Filename.is_relative x then Bsb_config.rev_lib_bs_prefix  x else x) 
         external_includes
         acc 
+        (fun x -> if Filename.is_relative x then Bsb_config.rev_lib_bs_prefix  x else x) 
 
   in 
   let emit_bsc_lib_includes source_dirs = 
     Bsb_ninja_util.output_kv
       Bsb_build_schemas.bsc_lib_includes 
-      (Bsb_build_util.flag_concat dash_i @@ 
+      (Bsb_build_util.include_dirs @@ 
        (all_includes 
           (if namespace = None then source_dirs 
            else Filename.current_dir_name :: source_dirs) ))  oc 
@@ -177,11 +182,11 @@ let output_ninja_and_namespace_map
       let bs_group, source_dirs,static_resources  =
         List.fold_left 
           (fun (acc, dirs,acc_resources) 
-            ({Bsb_parse_sources.sources ; dir; resources } as x : Bsb_parse_sources.file_group) ->
+            ({sources ; dir; resources } as x : Bsb_file_groups.file_group) ->
             merge_module_info_map  acc  sources ,  
-            (if Bsb_parse_sources.is_empty x then dirs else  dir::dirs) , 
+            (if Bsb_file_groups.is_empty x then dirs else  dir::dirs) , 
             ( if resources = [] then acc_resources
-              else Ext_list.map_append (fun x -> dir // x ) resources  acc_resources)
+              else Ext_list.map_append resources acc_resources (fun x -> dir // x ) )
           ) (String_map.empty,[],[]) bs_file_groups in
       has_reason_files := Bsb_db.sanity_check bs_group || !has_reason_files;     
       [|bs_group|], source_dirs, static_resources
@@ -189,35 +194,35 @@ let output_ninja_and_namespace_map
       let bs_groups = Array.init  (number_of_dev_groups + 1 ) (fun i -> String_map.empty) in
       let source_dirs = Array.init (number_of_dev_groups + 1 ) (fun i -> []) in
       let static_resources =
-        List.fold_left (fun (acc_resources : string list)  ({Bsb_parse_sources.sources; dir; resources; dir_index})  ->
+        List.fold_left (fun (acc_resources : string list)  
+          ({sources; dir; resources; dir_index} : Bsb_file_groups.file_group)  ->
             let dir_index = (dir_index :> int) in 
             bs_groups.(dir_index) <- merge_module_info_map bs_groups.(dir_index) sources ;
             source_dirs.(dir_index) <- dir :: source_dirs.(dir_index);
-            Ext_list.map_append (fun x -> dir//x) resources  acc_resources
+            Ext_list.map_append resources  acc_resources (fun x -> dir//x) 
           ) [] bs_file_groups in
       let lib = bs_groups.((Bsb_dir_index.lib_dir_index :> int)) in               
       has_reason_files := Bsb_db.sanity_check lib || !has_reason_files;
       for i = 1 to number_of_dev_groups  do
         let c = bs_groups.(i) in
         has_reason_files :=  Bsb_db.sanity_check c || !has_reason_files ;
-        String_map.iter (fun k _ -> if String_map.mem k lib then failwith ("conflict files found:" ^ k)) c ;
+        String_map.iter c (fun k _ -> if String_map.mem k lib then failwith ("conflict files found:" ^ k)) ;
         Bsb_ninja_util.output_kv 
           (Bsb_dir_index.(string_of_bsb_dev_include (of_int i)))
-          (Bsb_build_util.flag_concat dash_i @@ source_dirs.(i)) oc
+          (Bsb_build_util.include_dirs @@ source_dirs.(i)) oc
       done  ;
       bs_groups,source_dirs.((Bsb_dir_index.lib_dir_index:>int)), static_resources
   in
 
   output_reason_config ();
-  Bsb_db.write_build_cache ~dir:cwd_lib_bs bs_groups ;
+  Bsb_db_io.write_build_cache ~dir:cwd_lib_bs bs_groups ;
   emit_bsc_lib_includes bsc_lib_dirs;
-  List.iter 
-    (fun output -> 
-       Bsb_ninja_util.output_build
-         oc
-         ~output
-         ~input:(Bsb_config.proj_rel output)
-         ~rule:Bsb_rule.copy_resources) static_resources ;
+  Ext_list.iter static_resources (fun output -> 
+      Bsb_ninja_util.output_build
+        oc
+        ~output
+        ~input:(Bsb_config.proj_rel output)
+        ~rule:Bsb_rule.copy_resources);
   (** Generate build statement for each file *)        
   let all_info =      
     Bsb_ninja_file_groups.handle_file_groups oc  
@@ -248,7 +253,8 @@ let output_ninja_and_namespace_map
        Bsb_ninja_util.output_build oc 
          ~output:(ns ^ Literals.suffix_cmi)
          ~input:(ns ^ Literals.suffix_mlmap)
-         ~rule:Bsb_rule.build_package;
+         ~rule:Bsb_rule.build_package
+         ;
        (ns ^ Literals.suffix_cmi) :: all_info in 
      Bsb_ninja_util.phony 
        oc 

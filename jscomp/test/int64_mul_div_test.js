@@ -5,6 +5,7 @@ var List = require("../../lib/js/list.js");
 var $$Array = require("../../lib/js/array.js");
 var Block = require("../../lib/js/block.js");
 var Curry = require("../../lib/js/curry.js");
+var Int64 = require("../../lib/js/int64.js");
 var Printf = require("../../lib/js/printf.js");
 var Caml_int64 = require("../../lib/js/caml_int64.js");
 var Pervasives = require("../../lib/js/pervasives.js");
@@ -327,7 +328,7 @@ function from_pairs(prefix, pairs) {
                                         ]),
                                       "%s_%d"
                                     ]), prefix, i),
-                            (function () {
+                            (function (param) {
                                 return commutative_mul(result, a, b);
                               })
                           ];
@@ -1600,7 +1601,7 @@ function from(xs) {
                                     ]),
                                   "small_divs %L"
                                 ]), i),
-                        (function () {
+                        (function (param) {
                             return /* Eq */Block.__(0, [
                                       /* tuple */[
                                         c,
@@ -1676,7 +1677,7 @@ function from_compare(xs) {
                                     ]),
                                   "int64_compare %L"
                                 ]), i),
-                        (function () {
+                        (function (param) {
                             return /* Eq */Block.__(0, [
                                       c,
                                       Caml_int64.compare(a, b)
@@ -1701,7 +1702,7 @@ function from_to_string(xs) {
                                     ]),
                                   "to_string %L"
                                 ]), i),
-                        (function () {
+                        (function (param) {
                             return /* Eq */Block.__(0, [
                                       str_a,
                                       Caml_format.caml_int64_format("%d", a)
@@ -1711,7 +1712,7 @@ function from_to_string(xs) {
               }), $$Array.to_list(xs));
 }
 
-Mt.from_pair_suites("int64_mul_div_test.ml", Pervasives.$at(from_pairs("random", pairs), Pervasives.$at(from_pairs("small", small_pairs), Pervasives.$at(List.mapi((function (i, param) {
+Mt.from_pair_suites("Int64_mul_div_test", Pervasives.$at(from_pairs("random", pairs), Pervasives.$at(from_pairs("small", small_pairs), Pervasives.$at(List.mapi((function (i, param) {
                         var f = param[1];
                         var i64 = param[0];
                         return /* tuple */[
@@ -1727,7 +1728,7 @@ Mt.from_pair_suites("int64_mul_div_test.ml", Pervasives.$at(from_pairs("random",
                                             ]),
                                           "to_float_%d"
                                         ]), i),
-                                (function () {
+                                (function (param) {
                                     return /* Eq */Block.__(0, [
                                               Caml_int64.to_float(i64),
                                               f
@@ -1750,7 +1751,7 @@ Mt.from_pair_suites("int64_mul_div_test.ml", Pervasives.$at(from_pairs("random",
                                                 ]),
                                               "of_float_%d"
                                             ]), i),
-                                    (function () {
+                                    (function (param) {
                                         return /* Eq */Block.__(0, [
                                                   Caml_int64.of_float(f),
                                                   i64
@@ -1760,9 +1761,9 @@ Mt.from_pair_suites("int64_mul_div_test.ml", Pervasives.$at(from_pairs("random",
                           }), $$Array.to_list(of_float_pairs)), Pervasives.$at(/* :: */[
                           /* tuple */[
                             "compare_check_complete",
-                            (function () {
+                            (function (param) {
                                 return /* Eq */Block.__(0, [
-                                          $$Array.map((function () {
+                                          $$Array.map((function (param) {
                                                   return true;
                                                 }), check_complete_compare),
                                           check_complete_compare
@@ -1773,7 +1774,7 @@ Mt.from_pair_suites("int64_mul_div_test.ml", Pervasives.$at(from_pairs("random",
                         ], Pervasives.$at(from(simple_divs), Pervasives.$at(from_compare(int64_compare_tests), /* :: */[
                                   /* tuple */[
                                     "div_rem_0",
-                                    (function () {
+                                    (function (param) {
                                         return /* Eq */Block.__(0, [
                                                   /* int64 */[
                                                     /* hi */0,
@@ -1789,7 +1790,7 @@ Mt.from_pair_suites("int64_mul_div_test.ml", Pervasives.$at(from_pairs("random",
                                   /* :: */[
                                     /* tuple */[
                                       "div_rem_1",
-                                      (function () {
+                                      (function (param) {
                                           return /* Eq */Block.__(0, [
                                                     /* int64 */[
                                                       /* hi */-1,
@@ -1802,7 +1803,18 @@ Mt.from_pair_suites("int64_mul_div_test.ml", Pervasives.$at(from_pairs("random",
                                                   ]);
                                         })
                                     ],
-                                    /* [] */0
+                                    /* :: */[
+                                      /* tuple */[
+                                        "File \"int64_mul_div_test.ml\", line 214, characters 5-12",
+                                        (function (param) {
+                                            return /* Eq */Block.__(0, [
+                                                      Caml_int64.to_float(Int64.max_int),
+                                                      9.22337203685477581e+18
+                                                    ]);
+                                          })
+                                      ],
+                                      /* [] */0
+                                    ]
                                   ]
                                 ]))))))));
 

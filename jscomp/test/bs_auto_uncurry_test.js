@@ -12,7 +12,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -114,7 +114,7 @@ eq("File \"bs_auto_uncurry_test.ml\", line 52, characters 7-14", /* array */[
             return x > 0;
           })), true);
 
-Mt.from_pair_suites("bs_auto_uncurry_test.ml", suites[0]);
+Mt.from_pair_suites("Bs_auto_uncurry_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

@@ -15,7 +15,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -33,12 +33,13 @@ var class_tables = [
   0
 ];
 
-function create() {
+function create(param) {
   if (!class_tables[0]) {
     var $$class = CamlinternalOO.create_table([
           "add",
           "get"
         ]);
+    var env = CamlinternalOO.new_variable($$class, "");
     var ids = CamlinternalOO.new_methods_variables($$class, [
           "get",
           "add"
@@ -48,18 +49,19 @@ function create() {
     var data = ids[2];
     CamlinternalOO.set_methods($$class, /* array */[
           add,
-          (function (self$1, _) {
+          (function (self$1, param) {
               self$1[data] = self$1[data] + 1 | 0;
               return self$1;
             }),
           get,
-          (function (self$1, _) {
+          (function (self$1, param) {
               return self$1[data];
             })
         ]);
-    var env_init = function () {
+    var env_init = function (env$1) {
       var self = CamlinternalOO.create_object_opt(0, $$class);
       self[data] = 0;
+      self[env] = env$1;
       return self;
     };
     CamlinternalOO.init_class($$class);
@@ -86,7 +88,7 @@ var result2 = Caml_oo_curry.js2(5144726, 5, tmp$2, /* () */0);
 
 eq("File \"gpr_2250_test.ml\", line 37, characters 5-12", result2, 2);
 
-Mt.from_pair_suites("gpr_2250_test.ml", suites[0]);
+Mt.from_pair_suites("Gpr_2250_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

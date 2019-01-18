@@ -17,7 +17,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -29,7 +29,7 @@ function eq(loc, x, y) {
   return /* () */0;
 }
 
-var match = typeof (__dirname) === "undefined" ? undefined : (__dirname);
+var match = typeof __dirname === "undefined" ? undefined : __dirname;
 
 if (match !== undefined) {
   var root = App_root_finder.find_package_json(match);
@@ -72,7 +72,7 @@ if (match !== undefined) {
       ];
 }
 
-Mt.from_pair_suites("installation_test.ml", suites[0]);
+Mt.from_pair_suites("Installation_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

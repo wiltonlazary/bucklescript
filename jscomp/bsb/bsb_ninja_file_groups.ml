@@ -39,19 +39,19 @@ let zero : info =
 
 
 let handle_generators oc 
-    (group : Bsb_parse_sources.file_group) custom_rules =   
+    (group : Bsb_file_groups.file_group) custom_rules =   
   let map_to_source_dir = 
     (fun x -> Bsb_config.proj_rel (group.dir //x )) in
   group.generators
-  |> List.iter (fun  ({output; input; command}  : Bsb_parse_sources.build_generator)-> 
+  |> List.iter (fun  ({output; input; command}  : Bsb_file_groups.build_generator)-> 
       begin match String_map.find_opt command custom_rules with 
         | None -> Ext_pervasives.failwithf ~loc:__LOC__ "custom rule %s used but  not defined" command
         | Some rule -> 
           begin match output, input with
             | output::outputs, input::inputs -> 
               Bsb_ninja_util.output_build oc 
-                ~outputs:(Ext_list.map map_to_source_dir  outputs)
-                ~inputs:(Ext_list.map map_to_source_dir inputs) 
+                ~outputs:(Ext_list.map  outputs  map_to_source_dir)
+                ~inputs:(Ext_list.map inputs map_to_source_dir) 
                 ~output:(map_to_source_dir output)
                 ~input:(map_to_source_dir input)
                 ~rule
@@ -213,10 +213,11 @@ let emit_intf_build
                     Overwrite (string_of_int (group_dir_index :> int )) }])
   ;
   Bsb_ninja_util.output_build oc
-    ~shadows:common_shadows
     ~output:output_cmi
+    ~shadows:common_shadows
     ~input:output_mliast
-    ~rule:Bsb_rule.build_cmi;
+    ~rule:Bsb_rule.build_cmi
+    ;
   [output_mliastd]
 
 
@@ -227,12 +228,12 @@ let handle_module_info
     js_post_build_cmd
     ~bs_suffix
     oc  module_name 
-    ( module_info : Bsb_db.module_info)
+    ( {name_sans_extension = input} as module_info : Bsb_db.module_info)
     namespace
   : info =
-  match module_info.ml, module_info.mli with
-  | Ml_source (input_impl,impl_is_re,_), 
-    Mli_source(input_intf, intf_is_re,_) ->
+  match module_info.ml_info, module_info.mli_info with
+  | Ml_source (impl_is_re,_), 
+    Mli_source(intf_is_re,_) ->
     emit_impl_build 
       package_specs
       group_dir_index
@@ -242,15 +243,15 @@ let handle_module_info
       ~is_re:impl_is_re
       js_post_build_cmd      
       namespace
-      input_impl  @ 
+      input  @ 
     emit_intf_build 
       package_specs
       group_dir_index
       oc         
       ~is_re:intf_is_re
       namespace
-      input_intf 
-  | Ml_source(input,is_re,_), Mli_empty ->
+      input 
+  | Ml_source(is_re,_), Mli_empty ->
     emit_impl_build 
       package_specs
       group_dir_index
@@ -261,7 +262,7 @@ let handle_module_info
       ~is_re
       namespace
       input 
-  | Ml_empty, Mli_source(input,is_re,_) ->    
+  | Ml_empty, Mli_source(is_re,_) ->    
     emit_intf_build 
       package_specs
       group_dir_index
@@ -281,7 +282,7 @@ let handle_file_group
     (files_to_install : String_hash_set.t) 
     (namespace  : string option)
     acc 
-    (group: Bsb_parse_sources.file_group ) 
+    (group: Bsb_file_groups.file_group ) 
   : info =
 
   handle_generators oc group custom_rules ;
@@ -311,7 +312,7 @@ let handle_file_groups
     ~bs_suffix
     ~js_post_build_cmd
     ~files_to_install ~custom_rules
-    (file_groups  :  Bsb_parse_sources.file_group list)
+    (file_groups  :  Bsb_file_groups.file_groups)
     namespace (st : info) : info  =
   List.fold_left 
     (handle_file_group 

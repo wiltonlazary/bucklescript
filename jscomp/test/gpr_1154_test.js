@@ -15,7 +15,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -51,7 +51,7 @@ var a = Caml_int64.or_(Int64.one, (v[0] = v[0] + 1 | 0, Int64.one));
 
 eq("File \"gpr_1154_test.ml\", line 27, characters 12-19", v[0], 1);
 
-Mt.from_pair_suites("gpr_1154_test.ml", suites[0]);
+Mt.from_pair_suites("Gpr_1154_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

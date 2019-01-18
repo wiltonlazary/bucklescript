@@ -1,3 +1,5 @@
+
+
 exception Local
 exception B of int list 
 exception C of int * int 
@@ -108,8 +110,7 @@ let a2 : exn  =
   try [%bs.raw{| function (){throw (new Error("x"))} () |}] with (* throw is a statement *)
   | e -> e 
 
-
-;; Mt.from_pair_suites __FILE__ Mt.[
+let suites = ref Mt.[
     __LOC__, (fun _ -> Eq ((f,ff,fff,a0), (2,2,2,2)));
     (* __LOC__, (fun _ -> Eq (Js.Exn.Error (Obj.magic 2) , a1)) *)
     __LOC__, (fun _ -> 
@@ -118,3 +119,24 @@ let a2 : exn  =
         | _ -> assert false 
       )
 ]
+
+
+let test_id = ref 0
+let eq loc x y = Mt.eq_suites ~test_id ~suites loc x y 
+
+let () = 
+  try (fun%raw _ -> {|throw 2|} : unit -> unit ) ()
+  with 
+  e -> 
+    eq __LOC__ (Js.Exn.asJsExn e <> None) true
+
+
+let () = 
+  try raise Not_found
+  with 
+  e -> 
+    eq __LOC__ (Js.Exn.asJsExn e <> None) false
+
+let () = 
+  eq __LOC__ ((fun%raw  a b c _ -> {|return a + b + c |} : _ -> _ -> _ -> _ -> _ ) 1 2 3 4) 6
+;; Mt.from_pair_suites __MODULE__ !suites

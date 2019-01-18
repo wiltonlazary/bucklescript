@@ -15,7 +15,7 @@ function eq(loc, param) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -38,7 +38,7 @@ console.log(pair);
 
 eq("File \"module_splice_test.ml\", line 21, characters 5-12", pair);
 
-Mt.from_pair_suites("module_splice_test.ml", suites[0]);
+Mt.from_pair_suites("Module_splice_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

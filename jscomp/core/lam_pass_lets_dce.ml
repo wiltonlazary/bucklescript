@@ -144,17 +144,9 @@ let lets_helper (count_var : Ident.t -> Lam_pass_count.used_info) lam =
          | _ -> 
            Lam_util.refine_let ~kind v l1 (simplif l2)
         end
-    | Lifused(v, l) ->
-      if used  v then
-        simplif l
-      else Lam.unit
-    | Lsequence(Lifused(v, l1), l2) ->
-      if used v 
-      then Lam.seq (simplif l1) (simplif l2)
-      else simplif l2
     | Lsequence(l1, l2) -> Lam.seq (simplif l1) (simplif l2)
 
-    | Lapply{fn = Lfunction{function_kind =  Curried; params; body};  args; _}
+    | Lapply{fn = Lfunction{params; body};  args; _}
       when  Ext_list.same_length params args ->
       simplif (Lam_beta_reduce.beta_reduce  params body args)
     (* | Lapply{ fn = Lfunction{function_kind = Tupled; params; body}; *)
@@ -166,13 +158,13 @@ let lets_helper (count_var : Ident.t -> Lam_pass_count.used_info) lam =
     (*   simplif (Lam_beta_reduce.beta_reduce params body args) *)
 
     | Lapply{fn = l1;args =  ll; loc; status} -> 
-      Lam.apply (simplif l1) (Ext_list.map simplif ll) loc status
-    | Lfunction{arity; function_kind; params; body = l} ->
-      Lam.function_ ~arity ~function_kind ~params ~body:(simplif l)
+      Lam.apply (simplif l1) (Ext_list.map  ll simplif) loc status
+    | Lfunction{arity; params; body = l} ->
+      Lam.function_ ~arity ~params ~body:(simplif l)
     | Lconst _ -> lam
     | Lletrec(bindings, body) ->
       Lam.letrec 
-        (Ext_list.map (fun (v, l) -> (v, simplif l)) bindings) 
+        (Ext_list.map_snd  bindings simplif) 
         (simplif body)
     | Lprim {primitive=Pstringadd; args = [l;r]; loc } -> 
       begin
@@ -223,15 +215,12 @@ let lets_helper (count_var : Ident.t -> Lam_pass_count.used_info) lam =
       end    
     | Lglobal_module _ -> lam    
     | Lprim {primitive; args; loc} 
-      -> Lam.prim ~primitive ~args:(Ext_list.map simplif args) loc
+      -> Lam.prim ~primitive ~args:(Ext_list.map args simplif) loc
     | Lswitch(l, sw) ->
       let new_l = simplif l
-      and new_consts =  Ext_list.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
-      and new_blocks =  Ext_list.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks
-      and new_fail = 
-        match sw.sw_failaction with 
-        | None -> None 
-        | Some x -> Some (simplif x)
+      and new_consts =  Ext_list.map_snd sw.sw_consts simplif
+      and new_blocks =  Ext_list.map_snd sw.sw_blocks simplif
+      and new_fail = Ext_option.map sw.sw_failaction simplif
       in
       Lam.switch
         new_l
@@ -239,10 +228,10 @@ let lets_helper (count_var : Ident.t -> Lam_pass_count.used_info) lam =
                  sw_failaction = new_fail}
     | Lstringswitch (l,sw,d) ->
       Lam.stringswitch
-        (simplif l) (Ext_list.map (fun (s,l) -> s,simplif l) sw)
-        (match d with None -> None | Some d -> Some (simplif d))
+        (simplif l) (Ext_list.map_snd  sw simplif)
+        (Ext_option.map d simplif)
     | Lstaticraise (i,ls) ->
-      Lam.staticraise i (Ext_list.map simplif ls)
+      Lam.staticraise i (Ext_list.map ls simplif)
     | Lstaticcatch(l1, (i,args), l2) ->
       Lam.staticcatch (simplif l1) (i,args) (simplif l2)
     | Ltrywith(l1, v, l2) -> Lam.try_ (simplif l1) v (simplif l2)
@@ -255,7 +244,7 @@ let lets_helper (count_var : Ident.t -> Lam_pass_count.used_info) lam =
       Lam.for_ v (simplif l1) (simplif l2) dir (simplif l3)
     | Lassign(v, l) -> Lam.assign v (simplif l)
     | Lsend(k, m, o, ll, loc) ->
-      Lam.send k (simplif m) (simplif o) (Ext_list.map simplif ll) loc
+      Lam.send k (simplif m) (simplif o) (Ext_list.map ll simplif) loc
   in simplif lam ;;
 
 
@@ -271,7 +260,7 @@ let apply_lets  occ lambda =
 
 let simplify_lets  (lam : Lam.t) = 
   let occ =  Lam_pass_count.collect_occurs  lam in 
-#if BS_DEBUG then 
-  Ext_log.dwarn "OCCTBL" "@[%a@]@." Lam_pass_count.pp_occ_tbl occ ;
+#if undefined BS_RELEASE_BUILD then 
+  Ext_log.dwarn ~__POS__ "@[%a@]@." Lam_pass_count.pp_occ_tbl occ ;
 #end
   apply_lets  occ   lam

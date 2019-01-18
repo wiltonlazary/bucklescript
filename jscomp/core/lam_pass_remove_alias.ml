@@ -88,7 +88,7 @@ let simplify_alias
       | Lglobal_module g 
       ->    
         Lam.prim 
-          ~primitive:(Pfield(i,Lambda.Fld_na))
+          ~primitive:(Pfield(i,Lam_compat.Fld_na))
           ~args:[Lam.global_module g ]
           loc
       | Lvar v as l-> 
@@ -104,7 +104,7 @@ let simplify_alias
       end 
     | Lglobal_module _ -> lam 
     | Lprim {primitive; args; loc } 
-      -> Lam.prim ~primitive ~args:(Ext_list.map simpl  args) loc
+      -> Lam.prim ~primitive ~args:(Ext_list.map args simpl) loc
     
     | Lifthenelse(Lprim {primitive = Pis_not_none; args =  [Lvar id ]} as l1, l2, l3) 
       -> 
@@ -144,7 +144,7 @@ let simplify_alias
     | Llet(str, v, l1, l2) ->
       Lam.let_ str v (simpl l1) (simpl l2 )
     | Lletrec(bindings, body) ->
-      let bindings = Ext_list.map (fun (k,l) ->  (k, simpl l) ) bindings in 
+      let bindings = Ext_list.map_snd  bindings simpl in 
       Lam.letrec bindings (simpl body) 
  
     (* complicated 
@@ -165,8 +165,8 @@ let simplify_alias
               | {closed_lambda=Some Lfunction{params; body; _} } 
                 (** be more cautious when do cross module inlining *)
                 when
-                  ( Ext_list.same_length params args &&
-                    List.for_all (fun (arg : Lam.t) ->
+                    Ext_list.same_length params args &&
+                    Ext_list.for_all args (fun arg ->
                         match arg with 
                         | Lvar p -> 
                           begin 
@@ -175,12 +175,12 @@ let simplify_alias
                             | None -> true 
                           end
                         |  _ -> true 
-                      ) args) -> 
+                      ) -> 
                 simpl @@
                 Lam_beta_reduce.propogate_beta_reduce
                   meta params body args
               | _ -> 
-                Lam.apply (simpl l1) (Ext_list.map simpl args) loc status
+                Lam.apply (simpl l1) (Ext_list.map args simpl) loc status
             
 
       end
@@ -194,7 +194,7 @@ let simplify_alias
       (* Check info for always inlining *)
 
       (* Ext_log.dwarn __LOC__ "%s/%d" v.name v.stamp;     *)
-      let normal () = Lam.apply ( simpl fn) (Ext_list.map simpl args) loc status in
+      let normal () = Lam.apply ( simpl fn) (Ext_list.map args simpl) loc status in
       begin 
         match Ident_hashtbl.find_opt meta.ident_tbl v with
         | Some (FunctionId {lambda = Some(Lfunction {params; body} as _m,
@@ -235,22 +235,11 @@ let simplify_alias
                 | false, (_, param_map)
                 | true, (true, param_map) -> 
                   if rec_flag = Rec then               
-                    begin
-                      (* Ext_log.dwarn __LOC__ "beta rec.. %s/%d" v.name v.stamp ; *)
-                      (* Lam_beta_reduce.propogate_beta_reduce meta params body args *)
-                      Lam_beta_reduce.propogate_beta_reduce_with_map meta param_map params body args
-                    end
+                    Lam_beta_reduce.propogate_beta_reduce_with_map meta param_map params body args
                   else 
-                    begin
-                      (* Ext_log.dwarn __LOC__ "beta  nonrec..[%d] [%a]  %s/%d"  *)
-                      (*   (List.length args)  *)
-                      (*   Printlambda.lambda body                      *)
-                      (*   v.name v.stamp ; *)
-                      simpl (Lam_beta_reduce.propogate_beta_reduce_with_map meta param_map params body args)
-
-                    end
+                    simpl (Lam_beta_reduce.propogate_beta_reduce_with_map meta param_map params body args)
                 | _ -> normal ()
-              else 
+            else 
                 normal ()
           else
             normal ()
@@ -259,7 +248,7 @@ let simplify_alias
 
       end
 
-    | Lapply{ fn = Lfunction{ function_kind = Curried ; params; body}; args; _}
+    | Lapply{ fn = Lfunction{ params; body}; args; _}
       when  Ext_list.same_length params args ->
       simpl (Lam_beta_reduce.propogate_beta_reduce meta params body args)
     (* | Lapply{ fn = Lfunction{function_kind =  Tupled;  params; body};  *)
@@ -271,9 +260,9 @@ let simplify_alias
     (*   simpl (Lam_beta_reduce.propogate_beta_reduce meta params body args) *)
 
     | Lapply {fn = l1; args =  ll;  loc ; status} ->
-      Lam.apply (simpl  l1) (Ext_list.map simpl  ll) loc status
-    | Lfunction {arity; function_kind; params; body = l}
-      -> Lam.function_ ~arity ~function_kind ~params  ~body:(simpl  l)
+      Lam.apply (simpl  l1) (Ext_list.map ll simpl) loc status
+    | Lfunction {arity; params; body = l}
+      -> Lam.function_ ~arity ~params  ~body:(simpl  l)
     | Lswitch (l, {sw_failaction; 
                    sw_consts; 
                    sw_blocks;
@@ -282,24 +271,18 @@ let simplify_alias
                   }) ->
       Lam.switch (simpl  l)
                {sw_consts = 
-                  Ext_list.map (fun (v, l) -> v, simpl  l) sw_consts;
-                sw_blocks = Ext_list.map (fun (v, l) -> v, simpl  l) sw_blocks;
-                sw_numconsts = sw_numconsts;
-                sw_numblocks = sw_numblocks;
-                sw_failaction = 
-                  begin 
-                    match sw_failaction with 
-                    | None -> None
-                    | Some x -> Some (simpl x)
-                  end}
+                  Ext_list.map_snd  sw_consts simpl;
+                sw_blocks = Ext_list.map_snd sw_blocks simpl;
+                sw_numconsts;
+                sw_numblocks;
+                sw_failaction = Ext_option.map sw_failaction simpl
+                }
     | Lstringswitch(l, sw, d) ->
       Lam.stringswitch (simpl  l )
-                    (Ext_list.map (fun (i, l) -> i,simpl  l) sw)
-                    (match d with
-                     | Some d -> Some (simpl d )
-                     | None -> None)
+                    (Ext_list.map_snd  sw simpl)
+                    (Ext_option.map d simpl)
     | Lstaticraise (i,ls) -> 
-      Lam.staticraise i (Ext_list.map simpl  ls)
+      Lam.staticraise i (Ext_list.map ls simpl )
     | Lstaticcatch (l1, ids, l2) -> 
       Lam.staticcatch (simpl  l1) ids (simpl  l2)
     | Ltrywith (l1, v, l2) -> Lam.try_ (simpl  l1) v (simpl  l2)
@@ -316,8 +299,7 @@ let simplify_alias
       Lam.assign v (simpl  l)
     | Lsend (u, m, o, ll, v) 
       -> 
-      Lam.send u (simpl m) (simpl o) (Ext_list.map simpl ll) v
-    | Lifused (v, l) -> Lam.ifused v (simpl  l)
+      Lam.send u (simpl m) (simpl o) (Ext_list.map ll simpl) v
   in 
   simpl lam
 

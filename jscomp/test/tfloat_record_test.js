@@ -24,7 +24,7 @@ function print_float(f) {
                 ]), Pervasives.string_of_float(f));
 }
 
-function print_newline() {
+function print_newline(param) {
   return Format.fprintf(fmt, /* Format */[
               /* Char_literal */Block.__(12, [
                   /* "\n" */10,
@@ -66,7 +66,7 @@ function eq(f, a, b) {
 
 eq("File \"tfloat_record_test.ml\", line 43, characters 5-12", $$Buffer.contents(buf), "1.\n1.\n2.\n3.\n\n1.\n2.\n3.\n4.\n5.\n6.\n7.\n8.\n9.\n0.\n1.\n2.\n3.\n4.\n5.\n6.\n7.\n8.\n9.\n0.\n1.\n2.\n3.\n4.\n5.\n6.\n7.\n8.\n9.\n0.\n1.\n2.\n3.\n4.\n5.\n6.\n7.\n8.\n9.\n0.\n\n");
 
-Mt.from_pair_suites("tfloat_record_test.ml", suites[0]);
+Mt.from_pair_suites("Tfloat_record_test", suites[0]);
 
 exports.buf = buf;
 exports.fmt = fmt;

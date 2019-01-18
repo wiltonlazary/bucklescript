@@ -13,7 +13,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -48,7 +48,7 @@ var u = f(x);
 
 eq("File \"mpr_6033_test.ml\", line 20, characters 6-13", u, "defabc");
 
-Mt.from_pair_suites("mpr_6033_test.ml", suites[0]);
+Mt.from_pair_suites("Mpr_6033_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

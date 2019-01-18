@@ -18,7 +18,7 @@ console.log("hey");
 
 var suites_000 = /* tuple */[
   "anything_to_string",
-  (function () {
+  (function (param) {
       return /* Eq */Block.__(0, [
                 "3",
                 String(3)
@@ -31,7 +31,7 @@ var suites = /* :: */[
   /* [] */0
 ];
 
-Mt.from_pair_suites("lib_js_test.ml", suites);
+Mt.from_pair_suites("Lib_js_test", suites);
 
 exports.suites = suites;
 /*  Not a pure module */

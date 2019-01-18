@@ -39,7 +39,7 @@ function f(g, h) {
 
 var suites_000 = /* tuple */[
   "eq_with",
-  (function () {
+  (function (param) {
       return /* Eq */Block.__(0, [
                 v,
                 u_v
@@ -52,7 +52,7 @@ var suites = /* :: */[
   /* [] */0
 ];
 
-Mt.from_pair_suites("record_with_test.ml", suites);
+Mt.from_pair_suites("Record_with_test", suites);
 
 var uv = /* record */[
   /* syntax */undefined,

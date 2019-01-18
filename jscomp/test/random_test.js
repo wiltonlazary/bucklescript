@@ -122,7 +122,7 @@ Curry._5(Printf.printf(/* Format */[
           "%Ld %Ld %d %f %ld \n"
         ]), f, h, vv, xx, xxx);
 
-Mt.from_pair_suites("random_test.ml", suites[0]);
+Mt.from_pair_suites("Random_test", suites[0]);
 
 exports.id = id;
 exports.suites = suites;

@@ -16,7 +16,7 @@ function eq(loc, param) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -28,11 +28,11 @@ function eq(loc, param) {
   return /* () */0;
 }
 
-var match = typeof (__filename) === "undefined" ? undefined : (__filename);
+var match = typeof __filename === "undefined" ? undefined : __filename;
 
 var current_file = match !== undefined ? match : "<Not Node JS>";
 
-var match$1 = typeof (__dirname) === "undefined" ? undefined : (__dirname);
+var match$1 = typeof __dirname === "undefined" ? undefined : __dirname;
 
 var current_dir_name = match$1 !== undefined ? match$1 : "<Not Node Js>";
 
@@ -42,7 +42,7 @@ Fs.readdirSync(current_dir_name);
 
 var pathobj = Path.parse(current_dir_name);
 
-var match$2 = typeof (module) === "undefined" ? undefined : (module);
+var match$2 = typeof module === "undefined" ? undefined : module;
 
 if (match$2 !== undefined) {
   console.log(/* tuple */[
@@ -55,7 +55,7 @@ if (match$2 !== undefined) {
       ]);
 }
 
-Mt.from_pair_suites("fs_test.ml", suites[0]);
+Mt.from_pair_suites("Fs_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

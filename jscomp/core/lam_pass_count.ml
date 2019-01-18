@@ -138,7 +138,7 @@ let collect_occurs  lam : occ_tbl =
       List.iter (fun (v, l) -> count bv l) bindings;
       count bv body
         (** Note there is a difference here when do beta reduction for *)
-    | Lapply{fn = Lfunction{function_kind= Curried; params; body};  args; _}
+    | Lapply{fn = Lfunction{params; body};  args; _}
       when  Ext_list.same_length params args ->
       count bv (Lam_beta_reduce.beta_reduce  params body args)
     (* | Lapply{fn = Lfunction{function_kind = Tupled; params; body}; *)
@@ -174,22 +174,18 @@ let collect_occurs  lam : occ_tbl =
       count bv m ;
       count bv o;
       List.iter (count bv) ll
-    | Lifused(v, l) ->
-      if used v then count bv l
   and count_default bv sw = 
     match sw.sw_failaction with
     | None -> ()
     | Some al ->
-      let nconsts = List.length sw.sw_consts
-      and nblocks = List.length sw.sw_blocks in
-      if nconsts < sw.sw_numconsts && nblocks < sw.sw_numblocks
+      if not sw.sw_numconsts && not sw.sw_numblocks
       then 
         begin (* default action will occur twice in native code *)
           count bv al ; count bv al
         end 
       else 
         begin (* default action will occur once *)
-          assert (nconsts < sw.sw_numconsts || nblocks < sw.sw_numblocks) ;
+          assert (not sw.sw_numconsts || not sw.sw_numblocks) ;
           count bv al
         end
   in

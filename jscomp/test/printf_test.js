@@ -34,7 +34,7 @@ function print_pair(fmt, param) {
 
 var suites_000 = /* tuple */[
   "sprintf_simple",
-  (function () {
+  (function (param) {
       return /* Eq */Block.__(0, [
                 "3232",
                 Curry._2(Printf.sprintf(/* Format */[
@@ -56,7 +56,7 @@ var suites_000 = /* tuple */[
 var suites_001 = /* :: */[
   /* tuple */[
     "print_asprintf",
-    (function () {
+    (function (param) {
         return /* Eq */Block.__(0, [
                   "xx",
                   Format.asprintf(/* Format */[
@@ -72,7 +72,7 @@ var suites_001 = /* :: */[
   /* :: */[
     /* tuple */[
       "print_pair",
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     "(1,2)",
                     Curry._2(Format.asprintf(/* Format */[
@@ -102,7 +102,7 @@ var v = Format.asprintf(/* Format */[
       "xx"
     ]);
 
-Mt.from_pair_suites("printf_test.ml", suites);
+Mt.from_pair_suites("Printf_test", suites);
 
 exports.print_pair = print_pair;
 exports.suites = suites;

@@ -30,7 +30,7 @@
 let log_counter = ref 0 
 
 let dump name (prog : J.program) =
-#if BS_COMPILER_IN_BROWSER || (undefined BS_DEBUG) then
+#if BS_COMPILER_IN_BROWSER || BS_RELEASE_BUILD then
     prog
 #else 
   begin
@@ -39,7 +39,7 @@ let dump name (prog : J.program) =
       then 
         begin
           incr log_counter ; 
-          Ext_log.dwarn __LOC__ "\n@[[TIME:]%s: %f@]@." name (Sys.time () *. 1000.);          
+          Ext_log.dwarn ~__POS__ "\n@[[TIME:]%s: %f@]@." name (Sys.time () *. 1000.);          
           Ext_pervasives.with_file_as_chan       
             (Ext_path.chop_extension ~loc:__LOC__ (Js_config.get_current_file()) ^
              (Printf.sprintf ".%02d.%s.jsx"  !log_counter name)

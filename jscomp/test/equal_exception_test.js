@@ -2,14 +2,14 @@
 
 var Mt = require("./mt.js");
 var Bytes = require("../../lib/js/bytes.js");
-var Js_exn = require("../../lib/js/js_exn.js");
 var Caml_bytes = require("../../lib/js/caml_bytes.js");
 var Caml_exceptions = require("../../lib/js/caml_exceptions.js");
+var Caml_js_exceptions = require("../../lib/js/caml_js_exceptions.js");
 var Caml_builtin_exceptions = require("../../lib/js/caml_builtin_exceptions.js");
 
 var v = "gso";
 
-function is_equal() {
+function is_equal(param) {
   if (Caml_bytes.get(Bytes.make(3, /* "a" */97), 0) !== /* "a" */97) {
     throw [
           Caml_builtin_exceptions.assert_failure,
@@ -45,7 +45,7 @@ function is_equal() {
   return 0;
 }
 
-function is_exception() {
+function is_exception(param) {
   try {
     throw Caml_builtin_exceptions.not_found;
   }
@@ -58,7 +58,7 @@ function is_exception() {
   }
 }
 
-function is_normal_exception() {
+function is_normal_exception(_x) {
   var A = Caml_exceptions.create("A");
   var v = [
     A,
@@ -68,7 +68,7 @@ function is_normal_exception() {
     throw v;
   }
   catch (raw_exn){
-    var exn = Js_exn.internalToOCamlException(raw_exn);
+    var exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
     if (exn[0] === A) {
       if (exn[1] !== 3) {
         throw exn;
@@ -81,7 +81,7 @@ function is_normal_exception() {
   }
 }
 
-function is_arbitrary_exception() {
+function is_arbitrary_exception(param) {
   var A = Caml_exceptions.create("A");
   try {
     throw A;

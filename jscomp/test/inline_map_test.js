@@ -160,10 +160,10 @@ var m = List.fold_left((function (acc, param) {
       ]
     ]);
 
-Mt.from_pair_suites("inline_map_test.ml", /* :: */[
+Mt.from_pair_suites("Inline_map_test", /* :: */[
       /* tuple */[
         "find",
-        (function () {
+        (function (param) {
             return /* Eq */Block.__(0, [
                       find(10, m),
                       /* "a" */97

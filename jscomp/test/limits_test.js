@@ -14,7 +14,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -34,7 +34,7 @@ eq("File \"limits_test.ml\", line 12, characters 5-12", Int32.max_int, (21474836
 
 eq("File \"limits_test.ml\", line 13, characters 5-12", Int32.min_int, (-2147483648));
 
-Mt.from_pair_suites("limits_test.ml", suites[0]);
+Mt.from_pair_suites("Limits_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

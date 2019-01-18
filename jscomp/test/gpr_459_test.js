@@ -12,7 +12,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -48,6 +48,6 @@ eq("File \"gpr_459_test.ml\", line 28, characters 5-12", /* tuple */[
       uu2["'x"]
     ]);
 
-Mt.from_pair_suites("gpr_459_test.ml", suites[0]);
+Mt.from_pair_suites("Gpr_459_test", suites[0]);
 
 /* hh Not a pure module */

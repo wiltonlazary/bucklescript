@@ -49,14 +49,14 @@ let refine_let
     ~kind param
     (arg : Lam.t) (l : Lam.t)  : Lam.t =
 
-  match (kind : Lam.let_kind ), arg, l  with 
+  match (kind : Lam_compat.let_kind ), arg, l  with 
   | _, _, Lvar w when Ident.same w param 
     (* let k = xx in k
       there is no [rec] so [k] would not appear in [xx]
      *)
     -> arg (* TODO: optimize here -- it's safe to do substitution here *)
   | _, _, Lprim {primitive ; args =  [Lvar w]; loc ; _} when Ident.same w param 
-                                                          &&  (function | Lam.Pmakeblock _ -> false | _ ->  true) primitive
+                                                          &&  (function | Lam_primitive.Pmakeblock _ -> false | _ ->  true) primitive
     (* don't inline inside a block *)
     ->  Lam.prim ~primitive ~args:[arg]  loc 
   (* we can not do this substitution when capttured *)
@@ -68,7 +68,7 @@ let refine_let
   (* v *)
   | _, _, Lapply {fn; args = [Lvar w]; loc; status} when
    Ident.same w param &&
-    (not (Lam.hit_any_variables (Ident_set.singleton param) fn ))
+    (not (Lam_hit.hit_variable param fn ))
    -> 
     (** does not work for multiple args since 
         evaluation order unspecified, does not apply 
@@ -120,7 +120,7 @@ let refine_let
     Lam.let_ Strict param arg  l *)
 
 let alias_ident_or_global (meta : Lam_stats.t) (k:Ident.t) (v:Ident.t) 
-    (v_kind : Lam_id_kind.t) (let_kind : Lam.let_kind) =
+    (v_kind : Lam_id_kind.t) (let_kind : Lam_compat.let_kind) =
   (** treat rec as Strict, k is assigned to v 
       {[ let k = v ]}
   *)
@@ -188,14 +188,14 @@ let element_of_lambda (lam : Lam.t) : Lam_id_kind.element =
   | _ -> NA 
 
 let kind_of_lambda_block (xs : Lam.t list) : Lam_id_kind.t = 
-  ImmutableBlock( Ext_array.of_list_map (fun x -> 
-    element_of_lambda x ) xs )
+  ImmutableBlock( Ext_array.of_list_map xs (fun x -> 
+    element_of_lambda x ))
 
 let field_flatten_get
    lam v i (tbl : Lam_id_kind.t Ident_hashtbl.t) : Lam.t =
   match Ident_hashtbl.find_opt tbl v  with 
   | Some (Module g) -> 
-    Lam.prim ~primitive:(Pfield (i, Lambda.Fld_na)) 
+    Lam.prim ~primitive:(Pfield (i, Lam_compat.Fld_na)) 
       ~args:[ Lam.global_module g ] Location.none
   | Some (ImmutableBlock (arr)) -> 
     begin match arr.(i) with 
@@ -225,7 +225,7 @@ let log_counter = ref 0
 
 
 let dump env ext  lam = 
-#if BS_COMPILER_IN_BROWSER || (undefined BS_DEBUG) then
+#if BS_COMPILER_IN_BROWSER || BS_RELEASE_BUILD then
       lam
 #else
    if Js_config.is_same_file ()
@@ -233,7 +233,7 @@ let dump env ext  lam =
       (* ATTENTION: easy to introduce a bug during refactoring when forgeting `begin` `end`*)
       begin 
         incr log_counter;
-        Ext_log.dwarn __LOC__ "\n@[[TIME:]%s: %f@]@." ext (Sys.time () *. 1000.);
+        Ext_log.dwarn ~__POS__ "\n@[[TIME:]%s: %f@]@." ext (Sys.time () *. 1000.);
         Lam_print.seriaize env 
           (Ext_path.chop_extension 
              ~loc:__LOC__ 
@@ -255,7 +255,13 @@ let is_function (lam : Lam.t) =
 let not_function (lam : Lam.t) = 
   match lam with 
   | Lfunction _ -> false | _ -> true 
+(* 
+let is_var (lam : Lam.t) id =   
+  match lam with 
+  | Lvar id0 -> Ident.same id0 id 
+  | _ -> false *)
 
+  
 (* TODO: we need create 
    1. a smart [let] combinator, reusable beta-reduction 
    2. [lapply fn args info] 

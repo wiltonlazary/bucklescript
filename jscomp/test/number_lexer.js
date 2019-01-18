@@ -1,16 +1,12 @@
 'use strict';
 
-var Sys = require("../../lib/js/sys.js");
 var Curry = require("../../lib/js/curry.js");
 var Lexing = require("../../lib/js/lexing.js");
-var Pervasives = require("../../lib/js/pervasives.js");
 
-var l = Sys.is_js ? (function (prim) {
-      console.log(prim);
-      return /* () */0;
-    }) : (function (param) {
-      return Pervasives.output_string(Pervasives.stdout, param);
-    });
+function l(prim) {
+  console.log(prim);
+  return /* () */0;
+}
 
 var __ocaml_lex_tables = /* record */[
   /* lex_base */"\0\0\xf6\xff\xf7\xff\xf8\xff\xf9\xff\xfa\xff\xfb\xff\xfc\xff:\0\x85\0\xff\xff",
@@ -30,54 +26,51 @@ function __ocaml_lex_token_rec(l, lexbuf, ___ocaml_lex_state) {
   while(true) {
     var __ocaml_lex_state = ___ocaml_lex_state;
     var __ocaml_lex_state$1 = Lexing.engine(__ocaml_lex_tables, __ocaml_lex_state, lexbuf);
-    if (__ocaml_lex_state$1 > 9 || __ocaml_lex_state$1 < 0) {
-      Curry._1(lexbuf[/* refill_buff */0], lexbuf);
-      ___ocaml_lex_state = __ocaml_lex_state$1;
-      continue ;
-    } else {
-      switch (__ocaml_lex_state$1) {
-        case 0 : 
-            Curry._1(l, "new line");
-            ___ocaml_lex_state = 0;
-            continue ;
-        case 1 : 
-            Curry._1(l, "number");
-            Curry._1(l, Lexing.lexeme(lexbuf));
-            ___ocaml_lex_state = 0;
-            continue ;
-        case 2 : 
-            Curry._1(l, "ident");
-            Curry._1(l, Lexing.lexeme(lexbuf));
-            ___ocaml_lex_state = 0;
-            continue ;
-        case 3 : 
-            Curry._1(l, "+");
-            ___ocaml_lex_state = 0;
-            continue ;
-        case 4 : 
-            Curry._1(l, "-");
-            ___ocaml_lex_state = 0;
-            continue ;
-        case 5 : 
-            Curry._1(l, "*");
-            ___ocaml_lex_state = 0;
-            continue ;
-        case 6 : 
-            Curry._1(l, "/");
-            ___ocaml_lex_state = 0;
-            continue ;
-        case 7 : 
-            Curry._1(l, "(");
-            ___ocaml_lex_state = 0;
-            continue ;
-        case 8 : 
-            Curry._1(l, ")");
-            ___ocaml_lex_state = 0;
-            continue ;
-        case 9 : 
-            return Curry._1(l, "eof");
-        
-      }
+    switch (__ocaml_lex_state$1) {
+      case 0 : 
+          Curry._1(l, "new line");
+          ___ocaml_lex_state = 0;
+          continue ;
+      case 1 : 
+          Curry._1(l, "number");
+          Curry._1(l, Lexing.lexeme(lexbuf));
+          ___ocaml_lex_state = 0;
+          continue ;
+      case 2 : 
+          Curry._1(l, "ident");
+          Curry._1(l, Lexing.lexeme(lexbuf));
+          ___ocaml_lex_state = 0;
+          continue ;
+      case 3 : 
+          Curry._1(l, "+");
+          ___ocaml_lex_state = 0;
+          continue ;
+      case 4 : 
+          Curry._1(l, "-");
+          ___ocaml_lex_state = 0;
+          continue ;
+      case 5 : 
+          Curry._1(l, "*");
+          ___ocaml_lex_state = 0;
+          continue ;
+      case 6 : 
+          Curry._1(l, "/");
+          ___ocaml_lex_state = 0;
+          continue ;
+      case 7 : 
+          Curry._1(l, "(");
+          ___ocaml_lex_state = 0;
+          continue ;
+      case 8 : 
+          Curry._1(l, ")");
+          ___ocaml_lex_state = 0;
+          continue ;
+      case 9 : 
+          return Curry._1(l, "eof");
+      default:
+        Curry._1(lexbuf[/* refill_buff */0], lexbuf);
+        ___ocaml_lex_state = __ocaml_lex_state$1;
+        continue ;
     }
   };
 }

@@ -26,13 +26,24 @@ type module_name = private string
 
 module String_set = Depend.StringSet
 
+(* FIXME: [Clflags.open_modules] seems not to be properly used *)
+#if OCAML_VERSION =~ ">4.03.0" then 
+module SMap = Depend.StringMap
+let bound_vars = SMap.empty 
+#else 
+let bound_vars = String_set.empty 
+#end
+
 type 'a kind = 'a Ml_binary.kind 
+
 
 let read_parse_and_extract (type t) (k : t kind) (ast : t) : String_set.t =
   Depend.free_structure_names := String_set.empty;
-  let bound_vars = String_set.empty in
   List.iter
     (fun modname  ->
+#if OCAML_VERSION =~ ">4.03.0" then
+       ignore @@ 
+#end       
        Depend.open_module bound_vars (Longident.Lident modname))
     (!Clflags.open_modules);
   (match k with
@@ -64,21 +75,24 @@ type ('a,'b) t =
 (* only visit nodes that are currently in the domain *)
 (* https://en.wikipedia.org/wiki/Topological_sorting *)
 (* dfs   *)
-let sort_files_by_dependencies ~domain dependency_graph =
+let sort_files_by_dependencies ~(domain : String_set.t) (dependency_graph : String_set.t String_map.t) : 
+  string Queue.t =
   let next current =
     (String_map.find_exn  current dependency_graph) in    
   let worklist = ref domain in
   let result = Queue.create () in
-  let rec visit visiting path current =
+  let rec visit (visiting : String_set.t) path (current : string) =
+    let next_path = current :: path in 
     if String_set.mem current visiting then
-      Bs_exception.error (Bs_cyclic_depends (current::path))
+      Bs_exception.error (Bs_cyclic_depends next_path)
     else if String_set.mem current !worklist then
       begin
+        let next_set = String_set.add current visiting in         
         next current |>        
         String_set.iter
           (fun node ->
              if  String_map.mem node  dependency_graph then
-               visit (String_set.add current visiting) (current::path) node)
+               visit next_set next_path node)
         ;
         worklist := String_set.remove  current !worklist;
         Queue.push current result ;
@@ -220,8 +234,9 @@ let collect_from_main
             (* | `Dir_with_excludes (dirname, dir_excludes) -> *)
             dirname,
              (Ext_list.flat_map_append 
+              dir_excludes  excludes
               (fun x -> [x ^ ".ml" ; x ^ ".mli" ])
-              dir_excludes  excludes) 
+              ) 
         in 
         Array.fold_left (fun acc source_file -> 
             if (Ext_string.ends_with source_file ".ml" ||

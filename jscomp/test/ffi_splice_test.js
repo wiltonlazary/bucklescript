@@ -12,7 +12,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -56,7 +56,7 @@ var u = v.sum();
 
 eq("File \"ffi_splice_test.ml\", line 57, characters 12-19", u, 10);
 
-Mt.from_pair_suites("ffi_splice_test.ml", suites[0]);
+Mt.from_pair_suites("Ffi_splice_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

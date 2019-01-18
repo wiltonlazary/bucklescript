@@ -12,7 +12,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -24,15 +24,11 @@ function eq(loc, x, y) {
   return /* () */0;
 }
 
-var match = 1 < 1;
-
-var a = 1 < (
-  match ? 1 : 10
-) ? 0 : 1;
+var a = 0;
 
 eq("File \"gpr_1749_test.ml\", line 18, characters 6-13", 0, a);
 
-Mt.from_pair_suites("gpr_1749_test.ml", suites[0]);
+Mt.from_pair_suites("Gpr_1749_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

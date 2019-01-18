@@ -2,7 +2,7 @@ include ../Makefile.shared
 
 CAMLC=../../lib/bsc.exe
 BSPACK=../bin/bspack.exe
-INCLUDES= -I ../stdlib  -I ../runtime -I ../others/
+INCLUDES= -I ../$(STDLIB)  -I ../runtime -I ../others/
 
 OTHERS := test_literals a test_ari test_export2 test_internalOO test_obj_simple_ffi test_scope \
 	test_switch arith_lexer test_array test_external test_is_js test_order \
@@ -134,7 +134,6 @@ OTHERS := test_literals a test_ari test_export2 test_internalOO test_obj_simple_
 	switch_case_test\
 	bb\
 	ocaml_parsetree_test\
-	ocaml_typedtree_test\
 	gpr_1484\
 	gpr_1481\
 	custom_error_test\
@@ -259,6 +258,21 @@ OTHERS := test_literals a test_ari test_export2 test_internalOO test_obj_simple_
 	gpr_2931_test\
 	gpr_2863_test\
 	optional_regression_test\
+	if_used_test\
+	int_switch_test\
+	parser_api\
+	parser_api_test\
+	inline_record_test\
+	large_record_duplication_test\
+	unboxed_attribute_test\
+	406_primitive_test\
+	fun_pattern_match\
+	gpr_3142_test\
+	gpr_3154_test\
+	gpr_373_test\
+	floatarray_test\
+	ocaml_typedtree_test
+# ocaml_typedtree_test is not cross version due to camlinternalFormat
 # bs_uncurry_test
 # needs Lam to get rid of Uncurry arity first
 # simple_derive_test
@@ -274,7 +288,7 @@ $(addsuffix .cmi, $(OTHERS)): ../runtime/js.cmi
 $(addsuffix .cmj, $(OTHERS)): ../runtime/js.cmj
 
 # It is okay to test deprecated API
-COMPFLAGS+=  $(MODULE_FLAGS) -w -40 -warn-error A+8-3-30-26+101-102-103-104
+COMPFLAGS+=  $(MODULE_FLAGS) -w -40-52 -warn-error A+8-3-30-26+101-102-103-104-52
 COMPFLAGS+=  -bs-no-version-header -absname -bs-diagnose -bs-cross-module-opt -bs-package-name  bs-platform -bs-package-output commonjs:jscomp/test
 
 
@@ -303,19 +317,16 @@ OCAML_SRC_UTILS=../../vendor/ocaml/utils/
 OCAML_SRC_PARSING=../../vendor/ocaml/parsing/
 OCAML_SRC_TYPING=../../vendor/ocaml/typing/
 
-arith_lexer.ml: arith_lexer.mll
-	$(CAMLLEX) $<
-number_lexer.ml: number_lexer.mll
-	$(CAMLLEX) $<
-simple_lexer_test.ml: simple_lexer_test.mll
-	$(CAMLLEX) $<
-ocaml_parsetree_test.ml: ocaml_parsetree_main.ml
-	$(BSPACK) -bs-main Ocaml_parsetree_main -bs-MD  -I $(OCAML_SRC_PARSING) -I $(OCAML_SRC_UTILS) -o $@
+ocaml_parsetree_test.ml: ocaml_parsetree_main_bspack.ml
+	$(BSPACK) -bs-main Ocaml_parsetree_main_bspack -bs-MD  -I $(OCAML_SRC_PARSING) -I $(OCAML_SRC_UTILS) -o $@
 
-ocaml_typedtree_test.ml: ocaml_typed_tree_main.ml
-	$(BSPACK) -bs-main Ocaml_typed_tree_main -bs-MD -I $(OCAML_SRC_PARSING) -I $(OCAML_SRC_UTILS) -I $(OCAML_SRC_TYPING) -o $@
+ocaml_typedtree_test.ml: ocaml_typed_tree_main_bspack.ml
+	$(BSPACK) -bs-main Ocaml_typed_tree_main_bspack -bs-MD -I $(OCAML_SRC_PARSING) -I $(OCAML_SRC_UTILS) -I $(OCAML_SRC_TYPING) -o $@
 
--include .depend
+parser_api.ml: parser_api_main_bspack.ml
+	$(BSPACK) -main-export Parser_api_main_bspack -bs-MD  -I $(OCAML_SRC_PARSING) -I $(OCAML_SRC_UTILS) -o $@
+
+include .depend
 
 depend:
-	$(CAMLDEP) -native $(INCLUDES) *.mli *.ml | sed -e 's/\.cmx/.cmj/g' > .depend
+	$(CAMLDEP) -native -I ../runtime -I ../others *.mli *.ml | sed -e 's/\.cmx/.cmj/g' > .depend

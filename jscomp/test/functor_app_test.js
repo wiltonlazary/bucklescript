@@ -15,7 +15,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -39,7 +39,7 @@ var v = Functor_def.$$return(/* () */0);
 
 eq("File \"functor_app_test.ml\", line 29, characters 6-13", v, 2);
 
-Mt.from_pair_suites("functor_app_test.ml", suites[0]);
+Mt.from_pair_suites("Functor_app_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

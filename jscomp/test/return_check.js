@@ -1,6 +1,6 @@
 'use strict';
 
-var Js_primitive = require("../../lib/js/js_primitive.js");
+var Caml_option = require("../../lib/js/caml_option.js");
 var Caml_builtin_exceptions = require("../../lib/js/caml_builtin_exceptions.js");
 
 function test(dom) {
@@ -41,7 +41,7 @@ function f_escaped_not(xs, i) {
 
 function f_escaped_1(xs, i) {
   var x = xs[i];
-  return (function () {
+  return (function (param) {
       if (x !== undefined) {
         return x;
       } else {
@@ -51,7 +51,7 @@ function f_escaped_1(xs, i) {
 }
 
 function f_escaped_2(xs, i) {
-  console.log(Js_primitive.undefined_to_opt(xs[i]));
+  console.log(Caml_option.undefined_to_opt(xs[i]));
   return /* () */0;
 }
 

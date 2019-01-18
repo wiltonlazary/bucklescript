@@ -49,9 +49,9 @@ let is_none_static (arg : J.expression_desc ) = arg = Undefined
 
 let is_not_none  (e : J.expression) : J.expression = 
   let desc = e.expression_desc in 
-  if is_none_static desc then E.caml_false 
+  if is_none_static desc then E.false_
   else match desc with 
-  | Optional_block _ -> E.caml_true
+  | Optional_block _ -> E.true_
   | _ -> 
     E.not (E.triple_equal e none)
   
@@ -59,7 +59,7 @@ let val_from_option (arg : J.expression) =
   match arg.expression_desc with 
   | Optional_block (x,_) -> x 
   | _ -> 
-    E.runtime_call Js_runtime_modules.js_primitive
+    E.runtime_call Js_runtime_modules.option
       "valFromOption" [arg]
 (**
   Invrariant: 
@@ -91,7 +91,7 @@ let get_default_undefined_from_optional
       E.econd (is_not_none arg )
         (val_from_option arg) E.undefined
     else
-      (E.runtime_call Js_runtime_modules.js_primitive "option_get" [arg])
+      (E.runtime_call Js_runtime_modules.option "option_get" [arg])
 
 let get_default_undefined (arg : J.expression) : J.expression =
   let desc = arg.expression_desc in
@@ -107,7 +107,7 @@ let get_default_undefined (arg : J.expression) : J.expression =
       E.econd (is_not_none arg) 
         (Js_of_lam_polyvar.get_field (val_from_option arg)) E.undefined
     else
-      E.runtime_call Js_runtime_modules.js_primitive "option_get_unwrap" [arg]
+      E.runtime_call Js_runtime_modules.option "option_get_unwrap" [arg]
 
 let destruct_optional
   ~for_sure_none

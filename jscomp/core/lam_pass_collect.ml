@@ -55,7 +55,7 @@ let annotate (meta : Lam_stats.t)  rec_flag  (k:Ident.t) (arity : Lam_arity.t) l
 *)
 let collect_helper  (meta : Lam_stats.t) (lam : Lam.t)  = 
   let rec collect_bind rec_flag
-      (kind : Lam.let_kind) 
+      (kind : Lam_compat.let_kind) 
       (ident : Ident.t)
       (lam : Lam.t) = 
     match lam with 
@@ -143,19 +143,13 @@ let collect_helper  (meta : Lam_stats.t) (lam : Lam.t)  =
     | Lprim {args; _} -> List.iter collect  args
     | Lswitch(l, {sw_failaction; sw_consts; sw_blocks}) ->
       collect  l;
-      List.iter (fun (_, l) -> collect  l) sw_consts;
-      List.iter (fun (_, l) -> collect  l) sw_blocks;
-      begin match sw_failaction with 
-        | None -> ()
-        | Some x -> collect x
-      end
+      Ext_list.iter_snd sw_consts collect;
+      Ext_list.iter_snd sw_blocks collect;
+      Ext_option.iter sw_failaction collect 
     | Lstringswitch(l, sw, d) ->
       collect  l ;
-      List.iter (fun (_, l) -> collect  l) sw ;
-      begin match d with
-        | Some d -> collect d 
-        | None -> ()
-      end
+      Ext_list.iter_snd sw  collect;
+      Ext_option.iter d collect
     | Lstaticraise (code,ls) -> 
       List.iter collect  ls
     | Lstaticcatch(l1, (_,_), l2) -> collect  l1; collect  l2
@@ -168,8 +162,8 @@ let collect_helper  (meta : Lam_stats.t) (lam : Lam.t)  =
       (* Lalias-bound variables are never assigned, so don't increase
          v's refcollect *)
       collect  l
-    | Lsend(_, m, o, ll, _) -> List.iter collect  (m::o::ll)
-    | Lifused(_, l) -> collect  l in collect lam 
+    | Lsend(_, m, o, ll, _) -> collect m ; collect o; List.iter collect ll
+    in collect lam 
 
 
 

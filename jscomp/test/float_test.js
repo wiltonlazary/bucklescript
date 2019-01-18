@@ -135,7 +135,7 @@ function from_pairs(ps) {
                                         ]),
                                       "pair %d"
                                     ]), i),
-                            (function () {
+                            (function (param) {
                                 return /* Approx */Block.__(5, [
                                           a,
                                           b
@@ -147,7 +147,7 @@ function from_pairs(ps) {
 
 var float_compare = Caml_primitive.caml_float_compare;
 
-var param = Caml_float.caml_classify_float(3);
+var param = Pervasives.classify_float(3);
 
 Mt_global.collect_eq(test_id, suites, "File \"float_test.ml\", line 47, characters 5-12", param, /* FP_normal */0);
 
@@ -237,10 +237,10 @@ var b = match$4[1];
 
 var a = match$4[0];
 
-Mt.from_pair_suites("float_test.ml", Pervasives.$at(/* :: */[
+Mt.from_pair_suites("Float_test", Pervasives.$at(/* :: */[
           /* tuple */[
             "mod_float",
-            (function () {
+            (function (param) {
                 return /* Approx */Block.__(5, [
                           3.2 % 0.5,
                           0.200000000000000178
@@ -250,7 +250,7 @@ Mt.from_pair_suites("float_test.ml", Pervasives.$at(/* :: */[
           /* :: */[
             /* tuple */[
               "modf_float1",
-              (function () {
+              (function (param) {
                   return /* Approx */Block.__(5, [
                             a,
                             0.299999999999997158
@@ -260,7 +260,7 @@ Mt.from_pair_suites("float_test.ml", Pervasives.$at(/* :: */[
             /* :: */[
               /* tuple */[
                 "modf_float2",
-                (function () {
+                (function (param) {
                     return /* Approx */Block.__(5, [
                               b,
                               32
@@ -270,7 +270,7 @@ Mt.from_pair_suites("float_test.ml", Pervasives.$at(/* :: */[
               /* :: */[
                 /* tuple */[
                   "int_of_float",
-                  (function () {
+                  (function (param) {
                       return /* Eq */Block.__(0, [
                                 3,
                                 3

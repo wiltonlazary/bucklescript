@@ -398,8 +398,11 @@ let directive_parse token_with_comments lexbuf =
     | INT v -> 
         token_op calc
           ~no:(fun e -> 
-              raise(Error(Conditional_expr_expected_type(Dir_type_bool,Dir_type_int), 
-                          curr_loc)))
+                push e ; 
+                v <> 0                              
+
+
+              )
           (Dir_int v)
     | FLOAT v -> 
         token_op calc

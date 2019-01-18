@@ -24,14 +24,24 @@
 
 
 let setup_env () =
-#if BS_DEBUG then
-    Js_config.set_debug_file "gpr_2863_test.ml";
+#if undefined BS_RELEASE_BUILD then
+    (match Ext_sys.getenv_opt "BS_DEBUG_FILE" with 
+     | None -> 
+       Js_config.set_debug_file "caml_obj.ml"
+     | Some s -> 
+       Js_config.set_debug_file s 
+    );
+    (if Ext_sys.getenv_opt "BS_DEBUG_CHROME" <> None then 
+      Js_config.debug := true);
 #end
   Lexer.replace_directive_bool "BS" true;
   Lexer.replace_directive_string "BS_VERSION"  Bs_version.version
+#if false then
+  ; Switch.cut := 100 (* tweakable but not very useful *)
+#end  
 
 let standard_library =
-#if BS_DEBUG then
+#if undefined BS_RELEASE_BUILD then
   Filename.concat (Filename.dirname Sys.executable_name)  "ocaml"
 #else
   Config.standard_library

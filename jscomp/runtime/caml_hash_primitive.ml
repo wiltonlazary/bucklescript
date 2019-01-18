@@ -24,10 +24,10 @@
 
 
 
-let (<< ) = Nativeint.shift_left
-let (>>>) = Nativeint.shift_right_logical
-let (|~) = Nativeint.logor
-let (^) = Nativeint.logxor
+let (<< ) = Caml_nativeint_extern.shift_left
+let (>>>) = Caml_nativeint_extern.shift_right_logical
+let (|~) = Caml_nativeint_extern.logor
+let (^) = Caml_nativeint_extern.logxor
 
 external ( *~ ) : nativeint -> nativeint -> nativeint = "caml_int32_mul" 
 external ( +~ ) : nativeint -> nativeint -> nativeint = "caml_int32_add"
@@ -53,38 +53,39 @@ let caml_hash_final_mix h =
   h := !h ^ (!h >>> 13);
   h := !h *~ 0xc2b2ae35n ;
   !h ^ (!h >>> 16)
-  (* Nativeint.logand  (!h ^ (!h >>> 16)) 0x3FFFFFFFn *)
+  (* Caml_nativeint_extern.logand  (!h ^ (!h >>> 16)) 0x3FFFFFFFn *)
 
 let caml_hash_mix_string h  s = 
-  let len =Bs_string.length s in
+  let module String = Caml_string_extern in 
+  let len =Caml_string_extern.length s in
   let block = len / 4 - 1  in
   let hash = ref h in  
   for i = 0 to block  do 
     let j = 4 * i in 
     let w = 
-      Char.code s.[j] lor 
-      (Char.code s.[j+1] lsl 8) lor 
-      (Char.code s.[j+2] lsl 16) lor 
-      (Char.code s.[j+3] lsl 24)
+      Caml_char.code s.[j] lor 
+      (Caml_char.code s.[j+1] lsl 8) lor 
+      (Caml_char.code s.[j+2] lsl 16) lor 
+      (Caml_char.code s.[j+3] lsl 24)
     in
-    hash := caml_hash_mix_int !hash (Nativeint.of_int w)
+    hash := caml_hash_mix_int !hash (Caml_nativeint_extern.of_int w)
   done ;
   let modulo =  len land 0b11 in 
   if modulo <> 0 then 
     begin 
       let w =
         if modulo = 3 then 
-          (Char.code s.[len - 1] lsl 16) lor 
-          (Char.code s.[len - 2] lsl 8) lor
-          (Char.code s.[len - 3])
+          (Caml_char.code s.[len - 1] lsl 16) lor 
+          (Caml_char.code s.[len - 2] lsl 8) lor
+          (Caml_char.code s.[len - 3])
         else if modulo = 2 then 
-          (Char.code s.[len -1] lsl 8) lor 
-          Char.code s.[len -2]
-        else Char.code s.[len - 1] 
+          (Caml_char.code s.[len -1] lsl 8) lor 
+          Caml_char.code s.[len -2]
+        else Caml_char.code s.[len - 1] 
       in 
-      hash := caml_hash_mix_int !hash (Nativeint.of_int w)
+      hash := caml_hash_mix_int !hash (Caml_nativeint_extern.of_int w)
     end;
-  hash := !hash ^ (Nativeint.of_int len) ;
+  hash := !hash ^ (Caml_nativeint_extern.of_int len) ;
   !hash 
 
  

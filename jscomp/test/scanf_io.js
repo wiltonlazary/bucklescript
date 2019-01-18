@@ -7,12 +7,12 @@ var Curry = require("../../lib/js/curry.js");
 var Scanf = require("../../lib/js/scanf.js");
 var $$Buffer = require("../../lib/js/buffer.js");
 var Digest = require("../../lib/js/digest.js");
-var Js_exn = require("../../lib/js/js_exn.js");
 var Printf = require("../../lib/js/printf.js");
 var Caml_io = require("../../lib/js/caml_io.js");
 var Caml_obj = require("../../lib/js/caml_obj.js");
+var Caml_bytes = require("../../lib/js/caml_bytes.js");
 var Pervasives = require("../../lib/js/pervasives.js");
-var Caml_string = require("../../lib/js/caml_string.js");
+var Caml_js_exceptions = require("../../lib/js/caml_js_exceptions.js");
 var Caml_missing_polyfill = require("../../lib/js/caml_missing_polyfill.js");
 var Caml_builtin_exceptions = require("../../lib/js/caml_builtin_exceptions.js");
 
@@ -94,7 +94,7 @@ function get_lines(fname) {
     return List.rev(l[0]);
   }
   catch (raw_exn){
-    var exn = Js_exn.internalToOCamlException(raw_exn);
+    var exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
     if (exn[0] === Scanf.Scan_failure) {
       var s = Curry._2(Printf.sprintf(/* Format */[
                 /* String_literal */Block.__(11, [
@@ -158,7 +158,7 @@ function add_digest_ib(ob, ib) {
     $$Buffer.add_string(ob, s);
     $$Buffer.add_char(ob, /* "#" */35);
     var s$1 = Digest.to_hex(Digest.string(s));
-    $$Buffer.add_string(ob, Caml_string.bytes_to_string(Bytes.uppercase(Caml_string.bytes_of_string(s$1))));
+    $$Buffer.add_string(ob, Caml_bytes.bytes_to_string(Bytes.uppercase(Caml_bytes.bytes_of_string(s$1))));
     return $$Buffer.add_char(ob, /* "\n" */10);
   };
   try {
@@ -183,11 +183,11 @@ function digest_file(fname) {
   return $$Buffer.contents(ob);
 }
 
-function test54() {
+function test54(param) {
   return Caml_obj.caml_equal(get_lines(tscanf_data_file), tscanf_data_file_lines);
 }
 
-function test55() {
+function test55(param) {
   var ob = $$Buffer.create(42);
   create_tscanf_data(ob, tscanf_data_file_lines);
   var s = $$Buffer.contents(ob);

@@ -26,19 +26,43 @@
 
 let dep_lit = " :"
 
+let write_buf name buf  =     
+  let oc = open_out_bin name in 
+  Buffer.output_buffer oc buf ;
+  close_out oc 
 
-let deps_of_channel ic : string array = 
+(* should be good for small file *)
+let load_file name (buf : Buffer.t): unit  = 
+  let len = Buffer.length buf in 
+  let ic = open_in_bin name in 
+  let n = in_channel_length ic in   
+  if n <> len then begin close_in ic ; write_buf name buf  end 
+  else
+    let holder = really_input_string ic  n in 
+    close_in ic ; 
+    if holder <> Buffer.contents buf then 
+      write_buf name buf 
+;;
+let write_file name  (buf : Buffer.t) = 
+  if Sys.file_exists name then 
+    load_file name buf 
+  else 
+    write_buf name buf 
+    
+(* Make suer it is the same as {!Binary_ast.magic_sep_char}*)
+let magic_sep_char = '\n'
+
+let deps_of_channel (ic : in_channel) : string array = 
   let size = input_binary_int ic in 
   let s = really_input_string ic size in 
-  let first_tab  = String.index s '\t' in 
+  let first_tab  = String.index s magic_sep_char in 
   let return_arr = Array.make (int_of_string (String.sub s 0 first_tab)) "" in 
-  let rec aux s ith offset = 
-    if offset >= size then 
-      ()
-    else 
-      let next_tab = String.index_from s offset '\t'  in 
+  let rec aux s ith (offset : int) : unit = 
+    if offset < size then
+      let next_tab = String.index_from s offset magic_sep_char  in 
       return_arr.(ith) <- String.sub s offset (next_tab - offset) ; 
-      aux s (ith + 1) (next_tab + 1) in 
+      aux s (ith + 1) (next_tab + 1) 
+  in 
   aux s 0 (first_tab + 1) ; 
 
   return_arr 
@@ -47,7 +71,7 @@ let deps_of_channel ic : string array =
     mostly for cutting the dependency so that [bsb_helper.exe] does
     not depend on compler-libs
 *)
-let read_deps fn : string array = 
+let read_deps (fn : string) : string array = 
   let ic = open_in_bin fn in 
   let v = deps_of_channel ic in 
   close_in ic;
@@ -56,11 +80,11 @@ let read_deps fn : string array =
 
 type kind = Js | Bytecode | Native
 
-let output_file oc source namespace = 
+let output_file (oc : Buffer.t) source namespace = 
   match namespace with 
-  | None -> output_string oc source 
+  | None -> Buffer.add_string oc source 
   | Some ns ->
-    output_string oc ( Ext_namespace.make ~ns source)
+    Buffer.add_string oc (Ext_namespace.make ~ns source)
 
 (** for bucklescript artifacts 
     [lhs_suffix] is [.cmj]
@@ -68,62 +92,51 @@ let output_file oc source namespace =
     is [.cmj] if it has [ml] (in this case does not care about mli or not)
     is [.cmi] if it has [mli]
 *)
+let oc_cmi buf namespace source = 
+  Buffer.add_char buf '\n';  
+  output_file buf source namespace;
+  Buffer.add_string buf Literals.suffix_cmi 
 
+
+let handle_module_info 
+    (module_info : Bsb_db.module_info)
+    input_file 
+    namespace rhs_suffix buf = 
+  let source = module_info.name_sans_extension in 
+  if source <> input_file then 
+    begin 
+      if module_info.ml_info <> Ml_empty then 
+        begin
+          Buffer.add_char buf '\n';  
+          output_file buf source namespace;
+          Buffer.add_string buf rhs_suffix
+        end;
+      (* #3260 cmj changes does not imply cmi change anymore *)
+      oc_cmi buf namespace source
+    end
 let oc_impl 
-    (set : string array)
+    (dependent_module_set : string array)
     (input_file : string)
     (lhs_suffix : string)
     (rhs_suffix : string)
     (index : Bsb_dir_index.t)
-    (data : Bsb_db.t array)
+    (data : Bsb_db_io.t)
     (namespace : string option)
-    (oc : out_channel)
+    (buf : Buffer.t)
   = 
-  output_file oc input_file namespace ; 
-  output_string oc lhs_suffix; 
-  output_string oc dep_lit ; 
-  for i = 0 to Array.length set - 1 do
-    let k = Array.unsafe_get set i in 
-    match String_map.find_opt k data.(0) with
-    | Some {ml = Ml_source (source,_,_) }  
-      -> 
-      if source <> input_file then 
-        begin 
-          output_string oc Ext_string.single_space ;  
-          output_file oc source namespace;
-          output_string oc rhs_suffix 
-        end
-    | Some {mli = Mli_source (source,_,_)  } -> 
-      if source <> input_file then 
-        begin 
-          output_string oc Ext_string.single_space ;  
-          output_file oc source namespace;
-          output_string oc Literals.suffix_cmi 
-        end
-    | Some {mli= Mli_empty; ml = Ml_empty} -> assert false
+  output_file buf input_file namespace ; 
+  Buffer.add_string buf lhs_suffix; 
+  Buffer.add_string buf dep_lit ; 
+  for i = 0 to Array.length dependent_module_set - 1 do
+    let k = Array.unsafe_get dependent_module_set i in 
+    match Bsb_db_io.find_opt  data 0 k with
+    | Some module_info -> 
+      handle_module_info module_info input_file namespace rhs_suffix buf
     | None  -> 
-      if Bsb_dir_index.is_lib_dir index  then () 
-      else 
-        begin match String_map.find_opt k data.((index  :> int)) with 
-          | Some {ml = Ml_source (source,_,_) }
-            -> 
-            if source <> input_file then 
-              begin 
-                output_string oc Ext_string.single_space ;  
-                output_file oc source namespace;
-                output_string oc rhs_suffix
-              end
-          | Some {mli = Mli_source (source,_,_) } -> 
-            if source <> input_file then 
-              begin 
-                output_string oc Ext_string.single_space ;  
-                output_file oc source namespace;
-                output_string oc Literals.suffix_cmi 
-              end 
-          | Some {mli = Mli_empty; ml = Ml_empty} -> assert false
-          | None -> ()
-        end
-
+      if not (Bsb_dir_index.is_lib_dir index) then      
+        Ext_option.iter (Bsb_db_io.find_opt data ((index  :> int)) k)
+          (fun module_info -> 
+             handle_module_info module_info input_file namespace rhs_suffix buf)
   done    
 
 
@@ -131,40 +144,27 @@ let oc_impl
     [.cmi] file
 *)
 let oc_intf
-    set
+    (dependent_module_set : string array)
     input_file 
     (index : Bsb_dir_index.t)
-    (data : Bsb_db.t array)
+    (data : Bsb_db_io.t)
     (namespace : string option)
-    (oc : out_channel) =   
-  output_file oc input_file namespace ; 
-  output_string oc Literals.suffix_cmi ; 
-  output_string oc dep_lit;
-  for i = 0 to Array.length set - 1 do               
-    let k = Array.unsafe_get set i in 
-    match String_map.find_opt k data.(0) with 
-    | Some ({ ml = Ml_source (source,_,_)  }
-           | { mli = Mli_source (source,_,_) }) -> 
-      if source <> input_file then begin              
-        output_string oc Ext_string.single_space ; 
-        output_file oc source namespace ; 
-        output_string oc Literals.suffix_cmi 
-      end 
-    | Some {ml =  Ml_empty; mli = Mli_empty } -> assert false
+    (buf : Buffer.t) =   
+  output_file buf input_file namespace ; 
+  Buffer.add_string buf Literals.suffix_cmi ; 
+  Buffer.add_string buf dep_lit;
+  for i = 0 to Array.length dependent_module_set - 1 do               
+    let k = Array.unsafe_get dependent_module_set i in 
+    match Bsb_db_io.find_opt data 0 k with 
+    | Some module_info -> 
+      let source = module_info.name_sans_extension in 
+      if source <> input_file then oc_cmi buf namespace source             
     | None -> 
-      if Bsb_dir_index.is_lib_dir index  then () 
-      else 
-        match String_map.find_opt k data.((index :> int)) with 
-        | Some ({ ml = Ml_source (source,_,_)  }
-               | { mli = Mli_source (source,_,_)  }) -> 
-          if source <> input_file then      
-            begin 
-              output_string oc Ext_string.single_space ; 
-              output_file oc source namespace;
-              output_string oc Literals.suffix_cmi
-            end 
-        | Some {ml = Ml_empty; mli = Mli_empty} -> assert false
-        | None -> () 
+      if not (Bsb_dir_index.is_lib_dir index)  then 
+        Ext_option.iter (Bsb_db_io.find_opt data ((index :> int)) k)
+          ( fun module_info -> 
+              let source = module_info.name_sans_extension in 
+              if source <> input_file then  oc_cmi buf namespace source)
   done  
 
 
@@ -175,7 +175,7 @@ let emit_dep_file
     (index : Bsb_dir_index.t) 
     (namespace : string option) : unit = 
   let data  =
-    Bsb_db.read_build_cache 
+    Bsb_db_io.read_build_cache 
       ~dir:Filename.current_dir_name
   in 
   let set = read_deps fn in 
@@ -192,31 +192,32 @@ let emit_dep_file
    let lhs_suffix = Literals.suffix_cmj in   
    let rhs_suffix = Literals.suffix_cmj in 
 #end
-    Ext_pervasives.with_file_as_chan (input_file ^ Literals.suffix_mlastd )
-      (fun oc -> 
-         oc_impl 
-           set 
-           input_file 
-           lhs_suffix 
-           rhs_suffix  
-           index 
-           data
-           namespace
-           oc
-      )
+   let buf = Buffer.create 64 in 
+   oc_impl 
+     set 
+     input_file 
+     lhs_suffix 
+     rhs_suffix  
+     index 
+     data
+     namespace
+     buf ;
+    let filename = (input_file ^ Literals.suffix_mlastd ) in 
+    write_file filename buf 
+    
   | None -> 
     begin match Ext_string.ends_with_then_chop fn Literals.suffix_mliast with 
       | Some input_file -> 
-        Ext_pervasives.with_file_as_chan (input_file ^ Literals.suffix_mliastd)
-          (fun oc -> 
-             oc_intf 
-               set 
-               input_file 
-               index 
-               data 
-               namespace 
-               oc 
-          )
+        let filename = (input_file ^ Literals.suffix_mliastd) in 
+        let buf = Buffer.create 64 in 
+        oc_intf 
+          set 
+          input_file 
+          index 
+          data 
+          namespace 
+          buf; 
+        write_file filename buf 
       | None -> 
         raise (Arg.Bad ("don't know what to do with  " ^ fn))
     end

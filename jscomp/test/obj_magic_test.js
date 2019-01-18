@@ -7,15 +7,15 @@ var Block = require("../../lib/js/block.js");
 var empty_backtrace = Block.__(Obj.abstract_tag, []);
 
 function is_block(x) {
-  return x.length !== undefined;
+  return typeof x !== "number";
 }
 
 var suites_000 = /* tuple */[
   "is_block_test1",
-  (function () {
+  (function (param) {
       return /* Eq */Block.__(0, [
                 false,
-                (3).length !== undefined
+                false
               ]);
     })
 ];
@@ -23,33 +23,33 @@ var suites_000 = /* tuple */[
 var suites_001 = /* :: */[
   /* tuple */[
     "is_block_test2",
-    (function () {
+    (function (param) {
         return /* Eq */Block.__(0, [
                   true,
-                  /* :: */[
+                  typeof /* :: */[
                     3,
                     /* [] */0
-                  ].length !== undefined
+                  ] !== "number"
                 ]);
       })
   ],
   /* :: */[
     /* tuple */[
       "is_block_test3",
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     true,
-                    "x".length !== undefined
+                    true
                   ]);
         })
     ],
     /* :: */[
       /* tuple */[
         "is_block_test4",
-        (function () {
+        (function (param) {
             return /* Eq */Block.__(0, [
                       false,
-                      (3.0).length !== undefined
+                      false
                     ]);
           })
       ],
@@ -63,7 +63,7 @@ var suites = /* :: */[
   suites_001
 ];
 
-Mt.from_pair_suites("obj_magic_test.ml", suites);
+Mt.from_pair_suites("Obj_magic_test", suites);
 
 exports.empty_backtrace = empty_backtrace;
 exports.is_block = is_block;

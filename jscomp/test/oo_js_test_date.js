@@ -18,7 +18,7 @@ var d3 = d2(2016)(1, /* () */0);
 
 var suites_000 = /* tuple */[
   "getMonth",
-  (function () {
+  (function (param) {
       return /* Eq */Block.__(0, [
                 2,
                 d.getMonth()
@@ -29,7 +29,7 @@ var suites_000 = /* tuple */[
 var suites_001 = /* :: */[
   /* tuple */[
     "getYear",
-    (function () {
+    (function (param) {
         return /* Eq */Block.__(0, [
                   /* tuple */[
                     2016,
@@ -52,7 +52,7 @@ var suites = /* :: */[
   suites_001
 ];
 
-Mt.from_pair_suites("oo_js_test_date.ml", suites);
+Mt.from_pair_suites("Oo_js_test_date", suites);
 
 exports.d = d;
 exports.d2 = d2;

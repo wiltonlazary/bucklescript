@@ -6,7 +6,7 @@ var $$Array = require("../../lib/js/array.js");
 var Bytes = require("../../lib/js/bytes.js");
 var Hashtbl = require("../../lib/js/hashtbl.js");
 var Mt_global = require("./mt_global.js");
-var Caml_string = require("../../lib/js/caml_string.js");
+var Caml_bytes = require("../../lib/js/caml_bytes.js");
 
 var suites = /* record */[/* contents : [] */0];
 
@@ -20,7 +20,7 @@ function eq(f) {
 
 var test_strings = $$Array.init(32, (function (i) {
         var c = Char.chr(i);
-        return Caml_string.bytes_to_string(Bytes.make(i, c));
+        return Caml_bytes.bytes_to_string(Bytes.make(i, c));
       }));
 
 var test_strings_hash_results = /* array */[
@@ -166,7 +166,7 @@ var param$8 = Hashtbl.hash(/* :: */[
 
 Mt_global.collect_eq(test_id, suites, "File \"hash_test.ml\", line 39, characters 5-12", param$8, 100650590);
 
-Mt.from_pair_suites("hash_test.ml", suites[0]);
+Mt.from_pair_suites("Hash_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

@@ -2,12 +2,12 @@
 
 var List = require("../../lib/js/list.js");
 var Curry = require("../../lib/js/curry.js");
-var Js_exn = require("../../lib/js/js_exn.js");
 var $$String = require("../../lib/js/string.js");
 var Caml_obj = require("../../lib/js/caml_obj.js");
 var Pervasives = require("../../lib/js/pervasives.js");
 var Caml_primitive = require("../../lib/js/caml_primitive.js");
 var Caml_exceptions = require("../../lib/js/caml_exceptions.js");
+var Caml_js_exceptions = require("../../lib/js/caml_js_exceptions.js");
 var Caml_builtin_exceptions = require("../../lib/js/caml_builtin_exceptions.js");
 
 var graph = /* :: */[
@@ -1076,34 +1076,58 @@ function of_list(l) {
               var l$1 = List.sort_uniq($$String.compare, l);
               var sub = function (n, l) {
                 var exit = 0;
-                if (n > 3 || n < 0) {
-                  exit = 1;
-                } else {
-                  switch (n) {
-                    case 0 : 
+                switch (n) {
+                  case 0 : 
+                      return /* tuple */[
+                              /* Empty */0,
+                              l
+                            ];
+                  case 1 : 
+                      if (l) {
                         return /* tuple */[
-                                /* Empty */0,
-                                l
+                                /* Node */[
+                                  /* Empty */0,
+                                  l[0],
+                                  /* Empty */0,
+                                  1
+                                ],
+                                l[1]
                               ];
-                    case 1 : 
-                        if (l) {
+                      } else {
+                        exit = 1;
+                      }
+                      break;
+                  case 2 : 
+                      if (l) {
+                        var match = l[1];
+                        if (match) {
                           return /* tuple */[
                                   /* Node */[
+                                    /* Node */[
+                                      /* Empty */0,
+                                      l[0],
+                                      /* Empty */0,
+                                      1
+                                    ],
+                                    match[0],
                                     /* Empty */0,
-                                    l[0],
-                                    /* Empty */0,
-                                    1
+                                    2
                                   ],
-                                  l[1]
+                                  match[1]
                                 ];
                         } else {
                           exit = 1;
                         }
-                        break;
-                    case 2 : 
-                        if (l) {
-                          var match = l[1];
-                          if (match) {
+                      } else {
+                        exit = 1;
+                      }
+                      break;
+                  case 3 : 
+                      if (l) {
+                        var match$1 = l[1];
+                        if (match$1) {
+                          var match$2 = match$1[1];
+                          if (match$2) {
                             return /* tuple */[
                                     /* Node */[
                                       /* Node */[
@@ -1112,11 +1136,16 @@ function of_list(l) {
                                         /* Empty */0,
                                         1
                                       ],
-                                      match[0],
-                                      /* Empty */0,
+                                      match$1[0],
+                                      /* Node */[
+                                        /* Empty */0,
+                                        match$2[0],
+                                        /* Empty */0,
+                                        1
+                                      ],
                                       2
                                     ],
-                                    match[1]
+                                    match$2[1]
                                   ];
                           } else {
                             exit = 1;
@@ -1124,44 +1153,12 @@ function of_list(l) {
                         } else {
                           exit = 1;
                         }
-                        break;
-                    case 3 : 
-                        if (l) {
-                          var match$1 = l[1];
-                          if (match$1) {
-                            var match$2 = match$1[1];
-                            if (match$2) {
-                              return /* tuple */[
-                                      /* Node */[
-                                        /* Node */[
-                                          /* Empty */0,
-                                          l[0],
-                                          /* Empty */0,
-                                          1
-                                        ],
-                                        match$1[0],
-                                        /* Node */[
-                                          /* Empty */0,
-                                          match$2[0],
-                                          /* Empty */0,
-                                          1
-                                        ],
-                                        2
-                                      ],
-                                      match$2[1]
-                                    ];
-                            } else {
-                              exit = 1;
-                            }
-                          } else {
-                            exit = 1;
-                          }
-                        } else {
-                          exit = 1;
-                        }
-                        break;
-                    
-                  }
+                      } else {
+                        exit = 1;
+                      }
+                      break;
+                  default:
+                    exit = 1;
                 }
                 if (exit === 1) {
                   var nl = n / 2 | 0;
@@ -1335,7 +1332,7 @@ try {
       ];
 }
 catch (raw_exn){
-  var exn = Js_exn.internalToOCamlException(raw_exn);
+  var exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
   var exit = 0;
   if (exn[0] === Cycle) {
     var match = exn[1];

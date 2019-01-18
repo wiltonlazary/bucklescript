@@ -61,15 +61,21 @@ let variant_can_bs_unwrap_fields (row_fields : Parsetree.row_field list) : bool 
     The result type would be [ hi:string ]
 *)
 let get_arg_type
-    ~nolabel optional
+    ~nolabel 
+    (is_optional : bool)
     (ptyp : Ast_core_type.t) :
   External_arg_spec.attr * Ast_core_type.t  =
   let ptyp =
-    if optional then
-      Ast_core_type.extract_option_type_exn ptyp
-    else ptyp in
+#if OCAML_VERSION =~ "<4.03.0" then
+    if is_optional then    
+      match ptyp.ptyp_desc with 
+      | Ptyp_constr (_, [ty]) -> ty  (*optional*)
+      | _ -> assert false
+    else 
+#end    
+      ptyp in
   if Ast_core_type.is_any ptyp then (* (_[@bs.as ])*)
-    if optional then
+    if is_optional then
       Bs_syntaxerr.err ptyp.ptyp_loc Invalid_underscore_type_in_external
     else begin
       let ptyp_attrs = ptyp.ptyp_attributes in
@@ -78,7 +84,7 @@ let get_arg_type
         we should warn, there is a trade off whether
         we should warn dropped non bs attribute or not
       *)
-      Bs_ast_invariant.warn_unused_attributes ptyp_attrs;
+      Bs_ast_invariant.warn_discarded_unused_attributes ptyp_attrs;
       match result with
       |  None ->
         Bs_syntaxerr.err ptyp.ptyp_loc Invalid_underscore_type_in_external
@@ -289,7 +295,7 @@ let process_external_attributes
                 *)
                 | scopes ->  { st with scopes = scopes }
               end
-            | "bs.splice" -> {st with splice = true}
+            | "bs.splice" | "bs.variadic" -> {st with splice = true}
             | "bs.send" ->
               { st with val_send = name_from_payload_or_prim ~loc payload}
             | "bs.send.pipe"
@@ -423,12 +429,12 @@ let handle_attributes
         if String.length prim_name <> 0 then
           Location.raise_errorf ~loc "[@@bs.obj] expect external names to be empty string";
         let arg_kinds, new_arg_types_ty, result_types =
-          Ext_list.fold_right
+          Ext_list.fold_right arg_types_ty ( [], [], [])
             (fun (label,ty,attr,loc) ( arg_labels, arg_types, result_types) ->
-               let arg_label = Ast_core_type.label_name label in
+               let arg_label = Ast_compatible.convert label in
                let new_arg_label, new_arg_types,  output_tys =
                  match arg_label with
-                 | Empty ->
+                 | Nolabel ->
                    let arg_type, new_ty = get_arg_type ~nolabel:true false ty in
                    begin match arg_type with
                      | Extern_unit ->
@@ -436,7 +442,7 @@ let handle_attributes
                      | _ ->
                        Location.raise_errorf ~loc "expect label, optional, or unit here"
                    end
-                 | Label name ->
+                 | Labelled name ->
                    let arg_type, new_ty = get_arg_type ~nolabel:false false ty in
                    begin match arg_type with
                      | Ignore ->
@@ -477,7 +483,13 @@ let handle_attributes
                    end
                  | Optional name ->
                    let arg_type, new_ty_extract = get_arg_type ~nolabel:false true ty in
-                   let new_ty = Ast_core_type.lift_option_type new_ty_extract in
+                   let new_ty = 
+#if OCAML_VERSION =~ "<4.03.0" then
+                      Ast_core_type.lift_option_type new_ty_extract 
+#else                      
+                      new_ty_extract
+#end
+                   in
                    begin match arg_type with
                      | Ignore ->
                        External_arg_spec.empty_kind arg_type,
@@ -517,8 +529,7 @@ let handle_attributes
                (
                  new_arg_label::arg_labels,
                  new_arg_types,
-                 output_tys)) arg_types_ty
-            ( [], [], []) in
+                 output_tys)) in
 
         let result =
           if Ast_core_type.is_any  result_type then
@@ -527,12 +538,9 @@ let handle_attributes
             snd @@ get_arg_type ~nolabel:true false result_type (* result type can not be labeled *)
 
         in
-        begin
-          (
-            Ext_list.fold_right (fun (label,ty,attrs,loc) acc ->
-                Ast_helper.Typ.arrow ~loc  ~attrs label ty acc
-              ) new_arg_types_ty result
-          ) ,
+        begin          
+          Ast_compatible.mk_fn_type new_arg_types_ty result
+          ,
           prim_name,
           Ffi_obj_create arg_kinds,
           left_attrs
@@ -545,9 +553,24 @@ let handle_attributes
   else
     let splice = st.splice in
     let arg_type_specs, new_arg_types_ty, arg_type_specs_length   =
-      Ext_list.fold_right
+      Ext_list.fold_right arg_types_ty
+        (match st with
+         | {val_send_pipe = Some obj; _ } ->
+           let arg_type, new_ty = get_arg_type ~nolabel:true false obj in
+           begin match arg_type with
+             | Arg_cst _ ->
+               Location.raise_errorf ~loc:obj.ptyp_loc "[@bs.as] is not supported in bs.send type "
+             | _ ->
+               (* more error checking *)
+               [External_arg_spec.empty_kind arg_type]
+               ,
+               [Ast_compatible.no_label, new_ty, [], obj.ptyp_loc]
+               ,0
+           end
+
+         | {val_send_pipe = None ; _ } -> [],[], 0)
         (fun (label,ty,attr,loc) (arg_type_specs, arg_types, i) ->
-           let arg_label = Ast_core_type.label_name label in
+           let arg_label = Ast_compatible.convert label in
            let arg_label, arg_type, new_arg_types =
              match arg_label with
              | Optional s  ->
@@ -558,18 +581,25 @@ let handle_attributes
                    (* ?x:([`x of int ] [@bs.string]) does not make sense *)
                    Location.raise_errorf
                      ~loc
-                     "[@@bs.string] does not work with optional when it has arities in label %s" label
+                     "[@@bs.string] does not work with optional when it has arities in label %s" s
                  | _ ->
                    External_arg_spec.optional s, arg_type,
-                   ((label, Ast_core_type.lift_option_type new_ty , attr,loc) :: arg_types) end
-             | Label s  ->
+                   let new_ty = 
+#if OCAML_VERSION =~ "<4.03.0" then
+                      Ast_core_type.lift_option_type new_ty 
+#else
+                      new_ty
+#end                      
+                    in
+                   ((label, new_ty, attr,loc) :: arg_types) end
+             | Labelled s  ->
                begin match get_arg_type ~nolabel:false false  ty with
                  | (Arg_cst ( i) as arg_type), new_ty ->
                    External_arg_spec.label s (Some i), arg_type, arg_types
                  | arg_type, new_ty ->
                    External_arg_spec.label s None, arg_type, (label, new_ty,attr,loc) :: arg_types
                end
-             | Empty ->
+             | Nolabel ->
                begin match get_arg_type ~nolabel:true false  ty with
                  | (Arg_cst ( i) as arg_type), new_ty ->
                    External_arg_spec.empty_lit i , arg_type,  arg_types
@@ -588,22 +618,7 @@ let handle_attributes
             if arg_type = Ignore then i
             else i + 1
            )
-        ) arg_types_ty
-        (match st with
-         | {val_send_pipe = Some obj; _ } ->
-           let arg_type, new_ty = get_arg_type ~nolabel:true false obj in
-           begin match arg_type with
-             | Arg_cst _ ->
-               Location.raise_errorf ~loc:obj.ptyp_loc "[@bs.as] is not supported in bs.send type "
-             | _ ->
-               (* more error checking *)
-               [External_arg_spec.empty_kind arg_type]
-               ,
-               ["", new_ty, [], obj.ptyp_loc]
-               ,0
-           end
-
-         | {val_send_pipe = None ; _ } -> [],[], 0) in
+        )  in
 
     let ffi : External_ffi_types.attr  = match st with
       | {set_index = true;
@@ -938,12 +953,7 @@ let handle_attributes
       let return_wrapper : External_ffi_types.return_wrapper =
         check_return_wrapper loc st.return_wrapper new_result_type
       in
-      (
-        Ext_list.fold_right (fun (label,ty,attrs,loc) acc ->
-            Ast_helper.Typ.arrow ~loc  ~attrs label ty acc
-          ) new_arg_types_ty new_result_type
-      ) ,
-
+      Ast_compatible.mk_fn_type new_arg_types_ty new_result_type,  
       prim_name,
       (Ffi_bs (arg_type_specs,return_wrapper ,  ffi)), left_attrs
     end
@@ -961,7 +971,7 @@ let handle_attributes_as_string
 let pval_prim_of_labels (labels : string Asttypes.loc list)
    =
   let arg_kinds =
-    Ext_list.fold_right
+    Ext_list.fold_right labels [] 
       (fun {Asttypes.loc ; txt } arg_kinds
         ->
           let arg_label =
@@ -970,7 +980,7 @@ let pval_prim_of_labels (labels : string Asttypes.loc list)
           {External_arg_spec.arg_type = Nothing ;
            arg_label  } :: arg_kinds
       )
-      labels [] in
+      in
   let encoding =
     External_ffi_types.to_string (Ffi_obj_create arg_kinds) in
   [""; encoding]
@@ -980,8 +990,11 @@ let pval_prim_of_option_labels
 (ends_with_unit : bool)
   =
   let arg_kinds =
-    Ext_list.fold_right
-      (fun (is_option,{Asttypes.loc ; txt }) arg_kinds
+    Ext_list.fold_right labels
+      (if ends_with_unit then
+         [External_arg_spec.empty_kind Extern_unit]
+       else [])
+      (fun (is_option,{loc ; txt }) arg_kinds
         ->
           let label_name = (Lam_methname.translate ~loc txt) in
           let arg_label =
@@ -991,11 +1004,7 @@ let pval_prim_of_option_labels
           in
           {External_arg_spec.arg_type = Nothing ;
            arg_label  } :: arg_kinds
-      )
-      labels
-      (if ends_with_unit then
-         [External_arg_spec.empty_kind Extern_unit]
-       else [])
+      )      
   in
   let encoding =
     External_ffi_types.to_string (Ffi_obj_create arg_kinds) in

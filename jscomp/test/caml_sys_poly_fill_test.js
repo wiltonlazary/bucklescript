@@ -1,6 +1,7 @@
 'use strict';
 
 var Mt = require("./mt.js");
+var Sys = require("../../lib/js/sys.js");
 var Block = require("../../lib/js/block.js");
 var Caml_sys = require("../../lib/js/caml_sys.js");
 var Node_process = require("../../lib/js/node_process.js");
@@ -15,7 +16,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -27,24 +28,24 @@ function eq(loc, x, y) {
   return /* () */0;
 }
 
-Node_process.putEnvVar("caml_sys_poly_fill_test.ml", "X");
+Node_process.putEnvVar("Caml_sys_poly_fill_test", "X");
 
-var v = Caml_sys.caml_sys_getenv("caml_sys_poly_fill_test.ml");
+var v = Caml_sys.caml_sys_getenv("Caml_sys_poly_fill_test");
 
-eq("File \"caml_sys_poly_fill_test.ml\", line 11, characters 5-12", "X", (Node_process.deleteEnvVar("caml_sys_poly_fill_test.ml"), v));
+eq("File \"caml_sys_poly_fill_test.ml\", line 11, characters 5-12", "X", (Node_process.deleteEnvVar("Caml_sys_poly_fill_test"), v));
 
-Node_process.putEnvVar("caml_sys_poly_fill_test.ml", "Y");
+Node_process.putEnvVar("Caml_sys_poly_fill_test", "Y");
 
-var v$1 = Caml_sys.caml_sys_getenv("caml_sys_poly_fill_test.ml");
+var v$1 = Caml_sys.caml_sys_getenv("Caml_sys_poly_fill_test");
 
-eq("File \"caml_sys_poly_fill_test.ml\", line 17, characters 5-12", "Y", (Node_process.deleteEnvVar("caml_sys_poly_fill_test.ml"), v$1));
+eq("File \"caml_sys_poly_fill_test.ml\", line 17, characters 5-12", "Y", (Node_process.deleteEnvVar("Caml_sys_poly_fill_test"), v$1));
 
-Node_process.deleteEnvVar("caml_sys_poly_fill_test.ml");
+Node_process.deleteEnvVar("Caml_sys_poly_fill_test");
 
 var tmp;
 
 try {
-  tmp = Caml_sys.caml_sys_getenv("caml_sys_poly_fill_test.ml");
+  tmp = Caml_sys.caml_sys_getenv("Caml_sys_poly_fill_test");
 }
 catch (exn){
   if (exn === Caml_builtin_exceptions.not_found) {
@@ -56,7 +57,14 @@ catch (exn){
 
 eq("File \"caml_sys_poly_fill_test.ml\", line 23, characters 5-12", "Z", tmp);
 
-Mt.from_pair_suites("caml_sys_poly_fill_test.ml", suites[0]);
+console.log(/* tuple */[
+      Caml_sys.caml_sys_getcwd(/* () */0),
+      Caml_sys.caml_sys_time(/* () */0),
+      Sys.argv,
+      Sys.executable_name
+    ]);
+
+Mt.from_pair_suites("Caml_sys_poly_fill_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

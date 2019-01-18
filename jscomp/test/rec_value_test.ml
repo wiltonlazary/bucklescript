@@ -29,12 +29,12 @@ let rec fib =
         v := Lazy.force h ;
         one
     | n -> fib (n - 1) + u (n - 2)
-
+#if OCAML_VERSION =~ "<4.03.0" then (* recursive lhs not allowed *)
 let rec xs = 
   let rec ys = 1 :: ys 
   and _zs () = (List.hd ys, List.hd (fst xs)) in
   (2 :: List.hd ys :: [], _zs)
-
+#end
 let rec xs = 
   let zs () = ( List.hd (fst xs)) in
   (2 :: [], zs)
@@ -152,6 +152,6 @@ and fake_inline_minus n =
 
 
 let fake_inline_inlie2 = fake_inline_minus 3 
- ;; Mt.from_pair_suites __FILE__ suites 
+ ;; Mt.from_pair_suites __MODULE__ suites 
 
 

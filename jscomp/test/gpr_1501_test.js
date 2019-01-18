@@ -15,7 +15,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -40,7 +40,7 @@ eq("File \"gpr_1501_test.ml\", line 17, characters 7-14", "Gpr_1501_test.B(1)", 
           1
         ]));
 
-Mt.from_pair_suites("gpr_1501_test.ml", suites[0]);
+Mt.from_pair_suites("Gpr_1501_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

@@ -31,13 +31,51 @@ let is_single_string (x : t ) =
         Pstr_eval (
           {pexp_desc = 
              Pexp_constant 
-               (Const_string (name,dec));
+#if OCAML_VERSION =~ ">4.3.0" then
+                (Pconst_string(name,dec))
+#else
+               (Const_string (name,dec))
+#end               
+              ;
            _},_);
       _}] -> Some (name,dec)
   | _  -> None
 
-let is_single_int (x : t ) = 
+let is_single_string_as_ast (x : t ) 
+  : Parsetree.expression option = 
   match x with  (** TODO also need detect empty phrase case *)
+  | PStr [ {
+      pstr_desc =  
+        Pstr_eval (
+          {pexp_desc = 
+             Pexp_constant 
+#if OCAML_VERSION =~ ">4.3.0" then
+                (Pconst_string(name,dec))
+#else
+               (Const_string (name,dec))
+#end               
+              ;
+           _} as e ,_);
+      _}] -> Some e
+  | _  -> None
+
+  
+(** TODO also need detect empty phrase case *)  
+#if OCAML_VERSION =~ ">4.3.0"  then
+let is_single_int (x : t ) : int option = 
+  match x with  
+  | PStr [ {
+      pstr_desc =  
+        Pstr_eval (
+          {pexp_desc = 
+             Pexp_constant 
+               (Pconst_integer (name,_));
+           _},_);
+      _}] -> Some (int_of_string name)
+  | _  -> None
+#else
+let is_single_int (x : t ) : int option = 
+  match x with  
   | PStr [ {
       pstr_desc =  
         Pstr_eval (
@@ -47,7 +85,7 @@ let is_single_int (x : t ) =
            _},_);
       _}] -> Some name
   | _  -> None
-
+#end
 type rtn = Not_String_Lteral | JS_Regex_Check_Failed | Correct of Parsetree.expression
 
 let as_string_exp ~check_js_regex (x : t ) = 
@@ -57,7 +95,12 @@ let as_string_exp ~check_js_regex (x : t ) =
         Pstr_eval (
           {pexp_desc = 
              Pexp_constant 
-               (Const_string (str,_));
+#if OCAML_VERSION =~ ">4.3.0" then 
+               (Pconst_string (str,_))
+#else
+               (Const_string (str,_))
+#end               
+               ;
            _} as e ,_);
       _}] -> if check_js_regex then (if Ext_js_regex.js_regex_checker str then Correct e else JS_Regex_Check_Failed) else Correct e
   | _  -> Not_String_Lteral
@@ -83,12 +126,8 @@ let as_ident (x : t ) =
 open Ast_helper
 
 let raw_string_payload loc (s : string) : t =
-  PStr [ Str.eval ~loc (Exp.constant ~loc (Const_string (s,None)  ))]
+  PStr [ Str.eval ~loc (Ast_compatible.const_exp_string ~loc s) ]
 
-let as_empty_structure (x : t ) = 
-  match x with 
-  | PStr ([]) -> true
-  | PTyp _ | PPat _ | PStr (_ :: _ ) -> false 
 
 type lid = string Asttypes.loc
 type label_expr = lid  * Parsetree.expression
@@ -133,7 +172,7 @@ let ident_or_record_as_config
     -> 
     begin match with_obj with
       | None ->
-        Ext_list.map
+        Ext_list.map label_exprs
           (fun ((x,y) : (Longident.t Asttypes.loc * _) ) -> 
              match (x,y) with 
              | ({txt = Lident name; loc} ) , 
@@ -146,7 +185,7 @@ let ident_or_record_as_config
              | _ -> 
                Location.raise_errorf ~loc "Qualified label is not allood"
           )
-          label_exprs
+
       | Some _ -> 
         Location.raise_errorf ~loc "with is not supported"
     end
@@ -178,9 +217,15 @@ let assert_strings loc (x : t) : string list
             pstr_loc = loc ;            
             _}] ->
     (try 
-       strs |> Ext_list.map (fun e ->
+        Ext_list.map strs (fun e ->
            match (e : Parsetree.expression) with
-           | {pexp_desc = Pexp_constant (Const_string (name,_)); _} -> 
+           | {pexp_desc = Pexp_constant (
+#if OCAML_VERSION =~ ">4.03.0" then 
+              Pconst_string
+#else              
+              Const_string
+#end              
+               (name,_)); _} -> 
              name
            | _ -> raise M.Not_str)
      with M.Not_str ->
@@ -191,10 +236,17 @@ let assert_strings loc (x : t) : string list
         Pstr_eval (
           {pexp_desc = 
              Pexp_constant 
+#if OCAML_VERSION =~ ">4.03.0" then 
+               (Pconst_string(name,_)); 
+#else               
                (Const_string (name,_));
+#end               
            _},_);
       _}] ->  [name] 
   | PStr [] ->  []
+#if OCAML_VERSION =~ ">4.03.0" then 
+  | PSig _ 
+#end
   | PStr _                
   | PTyp _ | PPat _ ->
     Location.raise_errorf ~loc "expect string tuple list"

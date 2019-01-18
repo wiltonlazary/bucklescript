@@ -1,4 +1,4 @@
-(* Copyright (C) 2015-2016 Bloomberg Finance L.P.
+(* Copyright (C) 2015- Authors of BuckleScript
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -34,7 +34,7 @@ let rec eliminate_tuple (id : Ident.t) (lam : Lam.t) acc =
     eliminate_tuple id e2 (Int_map.add i v acc)
     (* it is okay to have duplicates*)
   | _ ->
-    if Lam.hit_any_variables (Ident_set.singleton id) lam then
+    if Lam_hit.hit_variable id lam then
       None
     else  Some (acc,lam)
 (* [groups] are in reverse order *)
@@ -155,7 +155,7 @@ let deep_flatten
            ..
         ]}
       *)
-      let (res,l) = flatten acc arg  in
+      let (res,accux) = flatten acc arg  in
       begin match id.name, str, res with
         | ("match" | "include"| "param"),
           (Alias | Strict | StrictOpt),
@@ -163,28 +163,28 @@ let deep_flatten
           begin match eliminate_tuple id body Int_map.empty with
             | Some (tuple_mapping, body) ->
               flatten (
-                Ext_list.fold_left_with_offset
-                  (fun i acc (arg : Lam.t) ->
+                Ext_list.fold_left_with_offset args accux  0
+                  (fun arg  acc i ->
                      match Int_map.find_opt i tuple_mapping with
                      | None ->
                         Lam_group.nop_cons arg acc
                      | Some key ->
                        Lam_group.single str key arg :: acc
                   )
-                  0
-                  l args
+                  
+                  
               ) body
             | None ->
-              flatten (Single(str, id, res ) :: l) body
+              flatten (Single(str, id, res ) :: accux) body
           end
-        | _ -> flatten (Single(str, id, res ) :: l) body
+        | _ -> flatten (Single(str, id, res ) :: accux) body
       end
     | Lletrec (bind_args, body) ->
 
       flatten
         (
           Recursive
-            (Ext_list.map (fun (id, arg ) -> (id, aux arg)) bind_args)
+            (Ext_list.map_snd bind_args aux)
           :: acc
         )
         body
@@ -219,7 +219,7 @@ let deep_flatten
       *)
       let (rev_bindings, rev_wrap, _) =
         List.fold_left (fun  (inner_recursive_bindings,  wrap,stop)  ((id,lam) )  ->
-          if stop || Lam.hit_any_variables collections lam  then
+          if stop || Lam_hit.hit_variables collections lam  then
               (id, lam) :: inner_recursive_bindings, wrap, true
           else
               (inner_recursive_bindings,  (Lam_group.Single (Strict, id, lam)) :: wrap, false)
@@ -240,7 +240,7 @@ let deep_flatten
     (*       aux (beta_reduce params body args) *)
 
     | Lapply{fn = l1; args  = ll; loc; status} ->
-      Lam.apply (aux l1) (Ext_list.map aux ll) loc status
+      Lam.apply (aux l1) (Ext_list.map ll aux) loc status
 
     (* This kind of simple optimizations should be done each time
        and as early as possible *)
@@ -259,11 +259,11 @@ let deep_flatten
     | Lglobal_module _ -> lam
     | Lprim {primitive ; args; loc }
       ->
-      let args = Ext_list.map aux args in
+      let args = Ext_list.map args aux in
       Lam.prim ~primitive ~args loc
 
-    | Lfunction{arity; function_kind; params;  body = l} ->
-      Lam.function_ ~arity ~function_kind ~params  ~body:(aux  l)
+    | Lfunction{arity;  params;  body = l} ->
+      Lam.function_ ~arity  ~params  ~body:(aux  l)
     | Lswitch(l, {sw_failaction;
                   sw_consts;
                   sw_blocks;
@@ -272,27 +272,19 @@ let deep_flatten
                  }) ->
       Lam.switch (aux  l)
               {sw_consts =
-                 Ext_list.map (fun (v, l) -> v, aux  l) sw_consts;
-               sw_blocks = Ext_list.map (fun (v, l) -> v, aux  l) sw_blocks;
-               sw_numconsts = sw_numconsts;
-               sw_numblocks = sw_numblocks;
-               sw_failaction =
-                 begin
-                   match sw_failaction with
-                   | None -> None
-                   | Some x -> Some (aux x)
-                 end}
+                 Ext_list.map_snd  sw_consts aux;
+               sw_blocks = Ext_list.map_snd  sw_blocks aux;
+               sw_numconsts;
+               sw_numblocks;
+               sw_failaction = Ext_option.map sw_failaction aux
+              }
     | Lstringswitch(l, sw, d) ->
       Lam.stringswitch (aux  l)
-                    (Ext_list.map (fun (i, l) -> i,aux  l) sw)
-                    (match d with
-                     | Some d -> Some (aux d )
-                     | None -> None)
-
+                    (Ext_list.map_snd  sw aux)
+                    (Ext_option.map d aux)
     | Lstaticraise (i,ls)
-      -> Lam.staticraise i (Ext_list.map aux  ls)
-    | Lstaticcatch(l1, ids, l2)
-      ->
+      -> Lam.staticraise i (Ext_list.map ls aux)
+    | Lstaticcatch(l1, ids, l2) ->
       Lam.staticcatch (aux  l1) ids (aux  l2)
     | Ltrywith(l1, v, l2) ->
       Lam.try_ (aux  l1) v (aux  l2)
@@ -310,7 +302,5 @@ let deep_flatten
          v's refaux *)
       Lam.assign v (aux  l)
     | Lsend(u, m, o, ll, v) ->
-      Lam.send u (aux m) (aux o) (Ext_list.map aux ll) v
-
-    | Lifused(v, l) -> Lam.ifused v (aux  l)
+      Lam.send u (aux m) (aux o) (Ext_list.map ll aux) v
   in aux lam

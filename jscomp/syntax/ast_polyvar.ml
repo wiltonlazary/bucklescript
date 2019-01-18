@@ -36,10 +36,10 @@ let map_row_fields_into_ints ptyp_loc
             begin match Ast_attributes.iter_process_bs_int_as attrs with 
               | Some i -> 
                 i + 1, 
-                ((Ext_pervasives.hash_variant label , i):: acc ) 
+                ((Ast_compatible.hash_label label , i):: acc ) 
               | None -> 
                 i + 1 , 
-                ((Ext_pervasives.hash_variant label , i):: acc )
+                ((Ast_compatible.hash_label label , i):: acc )
             end
           | _ -> 
             Bs_syntaxerr.err ptyp_loc Invalid_bs_int_type
@@ -81,39 +81,41 @@ let map_constructor_declarations_into_ints
   | `offset j -> `Offset j 
   | `complex -> `New (List.rev acc)
 
+
+
 (** It also check in-consistency of cases like 
     {[ [`a  | `c of int ] ]}       
 *)  
 let map_row_fields_into_strings ptyp_loc 
-    (row_fields : Parsetree.row_field list) = 
+    (row_fields : Parsetree.row_field list) : External_arg_spec.attr = 
   let case, result = 
-    (Ext_list.fold_right (fun tag (nullary, acc) -> 
-         match nullary, tag with 
-         | (`Nothing | `Null), 
-           Parsetree.Rtag (label, attrs, true,  [])
-           -> 
-           begin match Ast_attributes.iter_process_bs_string_as attrs with 
-             | Some name -> 
-               `Null, ((Ext_pervasives.hash_variant label, name) :: acc )
+    Ext_list.fold_right row_fields (`Nothing, []) (fun tag (nullary, acc) -> 
+        match nullary, tag with 
+        | (`Nothing | `Null), 
+          Rtag (label, attrs, true,  [])
+          -> 
+          begin match Ast_attributes.iter_process_bs_string_as attrs with 
+            | Some name -> 
+              `Null, ((Ast_compatible.hash_label label, name) :: acc )
 
-             | None -> 
-               `Null, ((Ext_pervasives.hash_variant label, label) :: acc )
-           end
-         | (`Nothing | `NonNull), Parsetree.Rtag(label, attrs, false, ([ _ ])) 
-           -> 
-           begin match Ast_attributes.iter_process_bs_string_as attrs with 
-             | Some name -> 
-               `NonNull, ((Ext_pervasives.hash_variant label, name) :: acc)
-             | None -> 
-               `NonNull, ((Ext_pervasives.hash_variant label, label) :: acc)
-           end
-         | _ -> Bs_syntaxerr.err ptyp_loc Invalid_bs_string_type
+            | None -> 
+              `Null, ((Ast_compatible.hash_label label, Ast_compatible.label_of_name label) :: acc )
+          end
+        | (`Nothing | `NonNull), Rtag(label, attrs, false, ([ _ ])) 
+          -> 
+          begin match Ast_attributes.iter_process_bs_string_as attrs with 
+            | Some name -> 
+              `NonNull, ((Ast_compatible.hash_label label, name) :: acc)
+            | None -> 
+              `NonNull, ((Ast_compatible.hash_label label, Ast_compatible.label_of_name label) :: acc)
+          end
+        | _ -> Bs_syntaxerr.err ptyp_loc Invalid_bs_string_type
 
-       ) row_fields (`Nothing, [])) in 
-  (match case with 
-   | `Nothing -> Bs_syntaxerr.err ptyp_loc Invalid_bs_string_type
-   | `Null -> External_arg_spec.NullString result 
-   | `NonNull -> NonNullString result)
+      )  in 
+  match case with 
+  | `Nothing -> Bs_syntaxerr.err ptyp_loc Invalid_bs_string_type
+  | `Null -> External_arg_spec.NullString result 
+  | `NonNull -> NonNullString result
 
 
 let is_enum row_fields = 
@@ -136,7 +138,13 @@ let is_enum_constructors
   List.for_all 
     (fun (x : Parsetree.constructor_declaration) ->
        match x with 
-       | {pcd_args = []} -> true 
+       | {pcd_args = 
+#if OCAML_VERSION =~ ">4.03.0" then 
+  Pcstr_tuple [] (* Note the enum is encoded using [Pcstr_tuple []]*)
+#else  
+        []
+#end        
+        } -> true 
        | _ -> false 
     )
     constructors

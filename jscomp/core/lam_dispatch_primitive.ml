@@ -33,6 +33,19 @@
 module E = Js_exp_make  
 module S = Js_stmt_make
 
+(** not exhaustive *)
+let args_const_unbox_approx_int_zero (args : J.expression list) = 
+  match args with 
+  | [ {expression_desc = Number (Int { i = 0l ; }) }] -> true 
+  | _ -> false
+let args_const_unbox_approx_int_one (args : J.expression list) = 
+  match args with 
+  | [ {expression_desc = Number (Int { i = 1l ; }) }] -> true 
+  | _ -> false
+let args_const_unbox_approx_int_two (args : J.expression list) = 
+  match args with 
+  | [ {expression_desc = Number (Int { i = 2l ; }) }] -> true 
+  | _ -> false
 
 (** 
    There are two things we need consider:
@@ -49,10 +62,10 @@ let translate loc (prim_name : string)
   let call m = 
     E.runtime_call m prim_name args in 
   begin match prim_name with 
-    | "caml_gc_stat" 
+    (* | "caml_gc_stat" 
     | "caml_gc_quick_stat"  
+    | "caml_gc_get" *)
     | "caml_gc_counters"
-    | "caml_gc_get"
     | "caml_gc_set"
     | "caml_gc_minor"
     | "caml_gc_major_slice"
@@ -62,10 +75,10 @@ let translate loc (prim_name : string)
     | "caml_final_register"
     | "caml_final_release"
       ->  call Js_runtime_modules.gc
-    | "caml_abs_float" -> 
-      E.math "abs" args 
-    | "caml_acos_float" -> 
-      E.math "acos" args 
+    (* | "caml_abs_float" -> 
+      E.math "abs" args  *)
+    (* | "caml_acos_float" -> 
+      E.math "acos" args  *)
     |  "caml_add_float" -> 
       begin match args with 
         | [e0;e1] -> E.float_add e0 e1 (** TODO float plus*)
@@ -96,7 +109,7 @@ let translate loc (prim_name : string)
         | [e0;e1] -> E.float_comp Cgt  e0 e1
         | _ -> assert false 
       end
-    | "caml_tan_float"  ->
+    (* | "caml_tan_float"  ->
       E.math "tan" args 
     | "caml_tanh_float"  ->
       E.math "tanh" args 
@@ -121,13 +134,13 @@ let translate loc (prim_name : string)
     | "caml_sqrt_float" -> 
       E.math "sqrt" args
 
-
+ *)
     | "caml_float_of_int" -> 
       begin match args with 
         | [e] -> e 
         | _ -> assert false 
       end
-    | "caml_floor_float" ->
+    (* | "caml_floor_float" ->
       E.math "floor" args 
     | "caml_log_float" -> 
       E.math "log" args 
@@ -136,7 +149,7 @@ let translate loc (prim_name : string)
     | "caml_log1p_float" -> 
       E.math "log1p" args 
     | "caml_power_float"  -> 
-      E.math "pow" args
+      E.math "pow" args *)
 
     | "caml_array_get" -> 
       call Js_runtime_modules.array
@@ -280,8 +293,10 @@ let translate loc (prim_name : string)
         | [e0; e1] -> E.float_mul e0 e1 
         | _ -> assert false  
       end
-        
-
+#if OCAML_VERSION =~ ">4.03.0" then
+    | "caml_bytes_equal" ->   
+      call Js_runtime_modules.caml_primitive
+#end      
     | "caml_int64_equal_null"
       -> Js_long.equal_null args 
     | "caml_int64_equal_undefined"
@@ -294,13 +309,7 @@ let translate loc (prim_name : string)
     | "caml_int64_of_float"
       -> Js_long.of_float args
     | "caml_int64_compare"
-      -> Js_long.compare args 
-    | "js_int64_discard_sign"
-      -> Js_long.discard_sign args
-    | "js_int64_div_mod"
-      -> Js_long.div_mod args
-    | "js_int64_to_hex"
-      -> Js_long.to_hex args    
+      -> Js_long.compare args     
     | "caml_int64_bits_of_float"
       -> Js_long.bits_of_float args     
     | "caml_int64_float_of_bits"
@@ -313,7 +322,7 @@ let translate loc (prim_name : string)
       ->  Js_long.max args      
     | "caml_int32_float_of_bits"
     | "caml_int32_bits_of_float"
-    | "caml_classify_float"
+
     | "caml_modf_float"
     | "caml_ldexp_float"
     | "caml_frexp_float"
@@ -331,7 +340,7 @@ let translate loc (prim_name : string)
         | [e0;e1] -> E.float_mod e0 e1
         | _ -> assert false 
       end
-
+   
     | "caml_string_equal" 
       -> 
       begin match args with 
@@ -347,8 +356,7 @@ let translate loc (prim_name : string)
       end
     | "caml_string_lessequal"
       -> 
-      begin 
-        match args with 
+      begin match args with 
         | [e0; e1] 
           -> 
           E.string_comp Le e0 e1
@@ -466,6 +474,9 @@ let translate loc (prim_name : string)
       end 
 
 
+#if OCAML_VERSION =~ ">4.03.0" then
+    | "caml_create_bytes"  
+#end
     | "caml_create_string" -> 
       (* Bytes.create *)
       (* Note that for invalid range, JS raise an Exception RangeError, 
@@ -473,11 +484,20 @@ let translate loc (prim_name : string)
           Also, it's creating a [bytes] which is a js array actually.
       *)
       begin match args with
-        | [{expression_desc = Number (Int {i = 0l; _}); _}] 
+        | [{expression_desc = Number (Int {i; _}); _}] 
+          when i < 8l
           ->
-          E.array NA []
+          (*Invariants: assuming bytes are [int array]*)
+          E.array NA 
+            (if i = 0l then []
+            else 
+            Ext_list.init 
+              (Int32.to_int i)
+              (fun i -> E.zero_int_literal)
+            )
         | _ -> 
-          call Js_runtime_modules.string 
+          E.runtime_call Js_runtime_modules.bytes
+            "caml_create_bytes" args
       end
     | "caml_bool_compare" ->   
       begin match args with 
@@ -492,6 +512,7 @@ let translate loc (prim_name : string)
     | "caml_int32_compare"
     | "caml_nativeint_compare"
     | "caml_float_compare"
+    | "caml_bytes_compare"
     | "caml_string_compare" 
     -> 
       call Js_runtime_modules.caml_primitive
@@ -527,18 +548,23 @@ let translate loc (prim_name : string)
             call Js_runtime_modules.caml_primitive
         | _ -> assert false 
       end
-      
-    | "caml_string_get"    
-    | "string_of_bytes"
-    | "bytes_of_string"
-
-    | "caml_is_printable"
-    | "caml_string_of_char_array"
     | "caml_fill_string"
+    | "caml_fill_bytes"
+      -> 
+        E.runtime_call 
+          Js_runtime_modules.bytes "caml_fill_bytes" args
+    | "caml_is_printable" 
+      -> 
+      call Js_runtime_modules.char
+    | "caml_string_get"    
+      -> 
+        call Js_runtime_modules.string
+    | "bytes_to_string"
+    | "bytes_of_string"
     | "caml_blit_string" 
     | "caml_blit_bytes"
       -> 
-      call Js_runtime_modules.string
+      call Js_runtime_modules.bytes
 
     | "caml_register_named_value" -> 
       (**
@@ -581,20 +607,27 @@ let translate loc (prim_name : string)
     (** Note we captured [exception/extension] creation in the early pass, this primitive is 
         like normal one to set the identifier *)
 
-    | "caml_set_oo_id" 
+#if OCAML_VERSION =~ ">4.03.0" then
+    | "caml_fresh_oo_id" 
+      ->
+      Js_of_lam_exception.caml_fresh_oo_id args   
+#end
+    | "caml_is_extension" ->
+      call Js_runtime_modules.exceptions
+    | "caml_as_js_exn" ->
+      call Js_runtime_modules.caml_js_exceptions  
+    | "caml_set_oo_id" (* needed in {!camlinternalOO.set_id} *)
       ->
       Js_of_lam_exception.caml_set_oo_id args 
-
     | "caml_sys_const_big_endian" -> 
       (** return false *)
       E.bool Sys.big_endian
     | "caml_sys_const_word_size" -> 
       E.small_int  Sys.word_size
     (** TODO: How it will affect program behavior *)
-    | "caml_sys_const_ostype_cygwin" -> E.caml_false 
-    | "caml_sys_const_ostype_win32" -> E.caml_false 
-    | "caml_sys_const_ostype_unix" -> E.caml_true
-    | "caml_is_js" -> E.caml_true
+    | "caml_sys_const_ostype_cygwin" -> E.false_
+    | "caml_sys_const_ostype_win32" -> E.false_
+    | "caml_sys_const_ostype_unix" -> E.true_
     | "caml_sys_get_config" ->
       (** No cross compilation *)
       Js_of_lam_tuple.make [E.str Sys.os_type; E.small_int  Sys.word_size; 
@@ -625,23 +658,24 @@ let translate loc (prim_name : string)
     | "caml_set_parser_trace" 
       -> 
       call Js_runtime_modules.parser 
-
+    | "caml_make_float_vect"
+#if OCAML_VERSION =~ ">4.03.0" then    
+    | "caml_floatarray_create"
+#end    
+      ->
+      E.runtime_call Js_runtime_modules.array 
+        "caml_make_float_vect" args 
     | "caml_array_sub"
     | "caml_array_concat"
     (*external concat: 'a array list -> 'a array 
        Not good for inline *)
-
-    | "caml_array_blit"
-    | "caml_make_float_vect"
+    | "caml_array_blit"    
     | "caml_make_vect" -> 
       call Js_runtime_modules.array
     | "caml_ml_flush"
     | "caml_ml_out_channels_list"
-    | "caml_ml_open_descriptor_in" 
-    | "caml_ml_open_descriptor_out"
     | "caml_ml_output_char"
     | "caml_ml_output" 
-    | "caml_ml_input_char"
       -> 
       call Js_runtime_modules.io
 
@@ -683,7 +717,9 @@ let translate loc (prim_name : string)
 
       end
     | "caml_format_float"
-
+#if OCAML_VERSION =~ ">4.03.0" then
+    | "caml_hexstring_of_float"  
+#end    
     | "caml_nativeint_format"
     | "caml_int32_format"
     | "caml_float_of_string"
@@ -697,14 +733,6 @@ let translate loc (prim_name : string)
       call Js_runtime_modules.format 
     (*   "caml_alloc_dummy"; *)
     (* TODO:   "caml_alloc_dummy_float"; *)
-    | "caml_obj_is_block"
-      -> 
-      begin match args with 
-        | [e] -> E.is_caml_block e 
-        | _ -> assert false
-      end
-
-
     | "caml_obj_dup" 
     | "caml_update_dummy"
     | "caml_obj_truncate"
@@ -752,9 +780,8 @@ let translate loc (prim_name : string)
       Location.prerr_warning loc Warnings.Bs_polymorphic_comparison ; 
       call Js_runtime_modules.obj_runtime
     | "caml_obj_set_tag" 
-      -> begin match args with 
-          | [a;b]  -> E.block_set_tag a b 
-          | _ -> assert false end
+      -> 
+      call Js_runtime_modules.obj_runtime
     | "caml_obj_tag" -> 
       (* Note that in ocaml, [int] has tag [1000] and [string] has tag [252]
          also now we need do nullary check 
@@ -773,9 +800,6 @@ let translate loc (prim_name : string)
       end
     (* call  Js_config.bigarray *)
     (* End of bigarray support *)
-    | "caml_convert_raw_backtrace_slot"
-      -> call  Js_runtime_modules.backtrace
-
     | "caml_bswap16"
     | "caml_int32_bswap"
     | "caml_nativeint_bswap" 
@@ -807,6 +831,15 @@ let translate loc (prim_name : string)
     | "caml_weak_get_copy"
       -> call Js_runtime_modules.weak
 
+    | "caml_ml_open_descriptor_in" when   
+      args_const_unbox_approx_int_zero args -> 
+      E.runtime_ref Js_runtime_modules.io "stdin"
+    | "caml_ml_open_descriptor_out" when 
+      args_const_unbox_approx_int_one args -> 
+      E.runtime_ref Js_runtime_modules.io "stdout"
+    | "caml_ml_open_descriptor_out" when 
+      args_const_unbox_approx_int_two args -> 
+      E.runtime_ref Js_runtime_modules.io "stderr"
 
     | "caml_ba_create"
     | "caml_ba_get_generic"

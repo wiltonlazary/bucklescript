@@ -402,7 +402,7 @@ assert_("File \"stack_comp_test.ml\", line 129, characters 45-52", Caml_obj.caml
           ]
         ]));
 
-Mt.from_pair_suites("stack_comp_test.ml", suites[0]);
+Mt.from_pair_suites("Stack_comp_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

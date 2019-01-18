@@ -12,7 +12,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -24,7 +24,7 @@ function eq(loc, x, y) {
   return /* () */0;
 }
 
-function f() {
+function f(x) {
   return /* () */0;
 }
 
@@ -35,7 +35,7 @@ function ff(x) {
 
 eq("File \"ignore_test.ml\", line 16, characters 5-12", /* () */0, /* () */0);
 
-Mt.from_pair_suites("ignore_test.ml", suites[0]);
+Mt.from_pair_suites("Ignore_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

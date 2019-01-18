@@ -22,10 +22,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. *)
 open Ast_helper
-let process_getter_setter ~not_getter_setter ~get ~set
+
+let process_getter_setter 
+    ~not_getter_setter
+    ~(get : Parsetree.core_type -> _ -> Parsetree.attributes -> _) ~set
     loc name
     (attrs : Ast_attributes.t)
-    (ty : Parsetree.core_type) acc  =
+    (ty : Parsetree.core_type) (acc : _ list)  =
   match Ast_attributes.process_method_attributes_rev attrs with 
   | {get = None; set = None}, _  ->  not_getter_setter ty :: acc 
   | st , pctf_attributes
@@ -52,7 +55,13 @@ let process_getter_setter ~not_getter_setter ~get ~set
     in 
     if st.set = None then get_acc 
     else
-      set ty (name ^ Literals.setter_suffix) pctf_attributes         
+      set ty 
+#if OCAML_VERSION =~ ">4.03.0"  then
+    ({name with txt = name.Asttypes.txt ^ Literals.setter_suffix} : _ Asttypes.loc)
+#else
+      (name ^ Literals.setter_suffix)
+#end
+      pctf_attributes         
       :: get_acc 
 
 
@@ -101,7 +110,7 @@ let handle_class_type_field self
                       private_flag,
                       virtual_flag,
                       Ast_util.to_method_type
-                        loc self "" ty
+                        loc self Ast_compatible.no_label ty
                         (Ast_literal.type_unit ~loc ())
                      );
        pctf_attributes} in
@@ -157,7 +166,13 @@ let handle_core_type
     let (+>) attr (typ : Parsetree.core_type) =
       {typ with ptyp_attributes = attr :: typ.ptyp_attributes} in           
     let new_methods =
-      Ext_list.fold_right (fun (label, ptyp_attrs, core_type) acc ->
+      Ext_list.fold_right  methods []  (fun  meth_ acc ->
+        match meth_ with 
+#if OCAML_VERSION =~ ">4.03.0" then
+        | Parsetree.Oinherit _ -> meth_ :: acc 
+        | Parsetree.Otag 
+#end        
+          (label, ptyp_attrs, core_type) -> 
           let get ty name attrs =
             let attrs, core_type =
               match Ast_attributes.process_attributes_rev attrs with
@@ -169,7 +184,7 @@ let handle_core_type
               | Meth_callback attr, attrs ->
                 attrs, attr +> ty 
             in 
-            name , attrs, self.typ self core_type in
+            Ast_compatible.object_field name  attrs (self.typ self core_type) in
           let set ty name attrs =
             let attrs, core_type =
               match Ast_attributes.process_attributes_rev attrs with
@@ -181,8 +196,8 @@ let handle_core_type
               | Meth_callback attr, attrs ->
                 attrs, attr +> ty
             in               
-            name, attrs, Ast_util.to_method_type loc self "" core_type 
-              (Ast_literal.type_unit ~loc ()) in
+            Ast_compatible.object_field name attrs (Ast_util.to_method_type loc self Ast_compatible.no_label core_type 
+              (Ast_literal.type_unit ~loc ())) in
           let not_getter_setter ty =
             let attrs, core_type =
               match Ast_attributes.process_attributes_rev ptyp_attrs with
@@ -193,10 +208,10 @@ let handle_core_type
                 attrs, attr +> ty 
               | Meth_callback attr, attrs ->
                 attrs, attr +> ty  in            
-            label, attrs, self.typ self core_type in
+            Ast_compatible.object_field label attrs (self.typ self core_type) in
           process_getter_setter ~not_getter_setter ~get ~set
             loc label ptyp_attrs core_type acc
-        ) methods [] in      
+        )in      
     let inner_type =
       { ty
         with ptyp_desc = Ptyp_object(new_methods, closed_flag);
@@ -207,9 +222,9 @@ let handle_core_type
   | _ -> super.typ self ty
     
 let handle_class_type_fields self fields = 
-  Ext_list.fold_right 
+  Ext_list.fold_right fields []
   (handle_class_type_field self)
-  fields []
+  
   
 let handle_core_type self typ record_as_js_object =
   handle_core_type 

@@ -27,7 +27,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -40,6 +40,7 @@ function eq(loc, x, y) {
 }
 
 function restricted_point_init($$class) {
+  var x_init = CamlinternalOO.new_variable($$class, "");
   var ids = CamlinternalOO.new_methods_variables($$class, [
         "move",
         "get_x",
@@ -64,9 +65,10 @@ function restricted_point_init($$class) {
             return Curry._2(self$1[0][move], self$1, 1);
           })
       ]);
-  return (function (_, self, x_init) {
+  return (function (env, self, x_init$1) {
       var self$1 = CamlinternalOO.create_object_opt(self, $$class);
-      self$1[x] = x_init;
+      self$1[x_init] = x_init$1;
+      self$1[x] = x_init$1;
       return self$1;
     });
 }
@@ -76,7 +78,7 @@ var restricted_point = CamlinternalOO.make_class(shared$2, restricted_point_init
 function restricted_point$prime_init($$class) {
   var inh = CamlinternalOO.inherits($$class, 0, 0, shared$2, restricted_point, 1);
   var obj_init = inh[0];
-  return (function (_, self, x) {
+  return (function (env, self, x) {
       return Curry._2(obj_init, self, x);
     });
 }
@@ -86,7 +88,7 @@ var restricted_point$prime = CamlinternalOO.make_class(shared$2, restricted_poin
 function restricted_point2$prime_init($$class) {
   var inh = CamlinternalOO.inherits($$class, 0, 0, shared$2, restricted_point, 1);
   var obj_init = inh[0];
-  return (function (_, self, x) {
+  return (function (env, self, x) {
       return Curry._2(obj_init, self, x);
     });
 }
@@ -107,7 +109,7 @@ function abstract_point_001($$class) {
   CamlinternalOO.set_method($$class, get_offset, (function (self$5) {
           return Curry._1(self$5[0][get_x], self$5) - self$5[x_init] | 0;
         }));
-  return (function (_, self, x_init$1) {
+  return (function (env, self, x_init$1) {
       var self$1 = CamlinternalOO.create_object_opt(self, $$class);
       self$1[x_init] = x_init$1;
       return self$1;
@@ -122,6 +124,7 @@ var abstract_point = [
 ];
 
 function point_init($$class) {
+  var x_init = CamlinternalOO.new_variable($$class, "");
   var ids = CamlinternalOO.new_methods_variables($$class, shared, shared$1);
   var move = ids[0];
   var get_x = ids[1];
@@ -139,10 +142,11 @@ function point_init($$class) {
             return /* () */0;
           })
       ]);
-  return (function (_, self, x_init) {
+  return (function (env, self, x_init$1) {
       var self$1 = CamlinternalOO.create_object_opt(self, $$class);
-      Curry._2(obj_init, self$1, x_init);
-      self$1[x] = x_init;
+      self$1[x_init] = x_init$1;
+      Curry._2(obj_init, self$1, x_init$1);
+      self$1[x] = x_init$1;
       return CamlinternalOO.run_initializers_opt(self, self$1, $$class);
     });
 }
@@ -154,9 +158,11 @@ var point = CamlinternalOO.make_class([
     ], point_init);
 
 function colored_point_init($$class) {
+  var x = CamlinternalOO.new_variable($$class, "");
+  var c = CamlinternalOO.new_variable($$class, "");
   var ids = CamlinternalOO.new_methods_variables($$class, ["color"], ["c"]);
   var color = ids[0];
-  var c = ids[1];
+  var c$1 = ids[1];
   var inh = CamlinternalOO.inherits($$class, shared$1, 0, [
         "get_offset",
         "get_x",
@@ -164,12 +170,14 @@ function colored_point_init($$class) {
       ], point, 1);
   var obj_init = inh[0];
   CamlinternalOO.set_method($$class, color, (function (self$7) {
-          return self$7[c];
+          return self$7[c$1];
         }));
-  return (function (_, self, x, c$1) {
+  return (function (env, self, x$1, c$2) {
       var self$1 = CamlinternalOO.create_object_opt(self, $$class);
-      Curry._2(obj_init, self$1, x);
-      self$1[c] = c$1;
+      self$1[c] = c$2;
+      self$1[x] = x$1;
+      Curry._2(obj_init, self$1, x$1);
+      self$1[c$1] = c$2;
       return CamlinternalOO.run_initializers_opt(self, self$1, $$class);
     });
 }
@@ -205,7 +213,7 @@ function incr(p) {
   return Curry._1(set_x(p), get_succ_x(p));
 }
 
-Mt.from_pair_suites("class4_test.ml", suites[0]);
+Mt.from_pair_suites("Class4_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

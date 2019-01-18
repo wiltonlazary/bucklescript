@@ -39,32 +39,32 @@ let single_na = Js_cmj_format.single_na
 let values_of_export 
   (meta : Lam_stats.t) 
   (export_map  : Lam.t Ident_map.t)
+  : Js_cmj_format.cmj_value String_map.t 
   = 
-  List.fold_left
-    (fun   acc (x : Ident.t)  ->
-
+  Ext_list.fold_left meta.exports  String_map.empty    
+    (fun (x : Ident.t) acc   ->
        let arity : Js_cmj_format.arity =
          match Ident_hashtbl.find_opt meta.ident_tbl x with 
          | Some (FunctionId {arity ; _}) -> Single arity 
          | Some (ImmutableBlock(elems)) ->  
-           Submodule(elems |> Array.map (fun (x : Lam_id_kind.element) -> 
+           Submodule(Ext_array.map elems (fun x -> 
                match x with 
                | NA -> Lam_arity.na
                | SimpleForm lam -> Lam_arity_analysis.get_arity  meta lam)
              )
          | Some _ 
          | None ->
-          begin match Ident_map.find_opt x export_map with 
-          | Some (Lprim {primitive = Pmakeblock (_,_, Immutable); args }) ->
-            Submodule (args |> Ext_array.of_list_map (fun lam -> 
-            Lam_arity_analysis.get_arity meta lam
-            ))
-          | Some _
-          | None -> single_na
-          end
+           begin match Ident_map.find_opt x export_map with 
+             | Some (Lprim {primitive = Pmakeblock (_,_, Immutable); args }) ->
+               Submodule (Ext_array.of_list_map args (fun lam -> 
+                   Lam_arity_analysis.get_arity meta lam))
+             | Some _
+             | None -> single_na
+           end
        in
-       let closed_lambda = 
-         match Ident_map.find_opt x export_map with 
+       let persistent_closed_lambda = 
+         if not !Js_config.cross_module_inline then None
+         else match Ident_map.find_opt x export_map with 
          | Some lambda  -> 
            if Lam_analysis.safe_to_inline lambda
            (* when inlning a non function, we have to be very careful,
@@ -88,30 +88,36 @@ let values_of_export
                    Ident_map.is_empty free_variables
                then 
                  begin
-                   Ext_log.dwarn __LOC__ "%s recorded for inlining @." x.name ;
+                   Ext_log.dwarn ~__POS__ "%s recorded for inlining @." x.name ;
                    Some lambda
                  end
                else None
            else
              None
-         | None
-           -> None  in 
-       String_map.add x.name  Js_cmj_format.({arity ; closed_lambda }) acc          
+         | None -> None  in 
+       String_map.add x.name  Js_cmj_format.({arity ; persistent_closed_lambda }) acc          
     )
-    String_map.empty
-    meta.exports 
 
-let get_effect (meta : Lam_stats.t) maybe_pure external_ids = 
-  match maybe_pure with
-  | None ->  
-    Ext_option.bind ( Ext_list.find_first_not 
-                        (fun (id : Lam_module_ident.t) -> 
-                           Lam_compile_env.query_and_add_if_not_exist id 
-                             (Has_env meta.env )
-                             ~not_found:(fun _ -> false ) ~found:(fun i -> 
-                                 i.pure)
-                        ) external_ids) (fun x -> Lam_module_ident.name x)
-  | Some _ -> maybe_pure
+(* ATTENTION: all runtime modules, if it is not hard required, 
+  it should be okay to not reference it 
+*)
+let get_dependent_module_effect 
+  (meta : Lam_stats.t) 
+  (maybe_pure : string option) 
+  (external_ids : Lam_module_ident.t list) = 
+  if maybe_pure = None then
+    let non_pure_module =  
+      Ext_list.find_first_not external_ids
+        (fun id -> 
+           id.kind = Runtime ||
+           Lam_compile_env.query_and_add_if_not_exist id 
+             (Has_env meta.env )
+             ~not_found:(fun _ -> false ) 
+             ~found:(fun {pure} -> pure)
+        ) in 
+    Ext_option.map  non_pure_module (fun x -> Lam_module_ident.name x)
+  else 
+    maybe_pure
 
 
 
@@ -128,19 +134,19 @@ let get_effect (meta : Lam_stats.t) maybe_pure external_ids =
 *)
 let export_to_cmj 
     (meta : Lam_stats.t ) 
-    maybe_pure
-    external_ids 
+    effect 
     export_map
     cmj_case
   : Js_cmj_format.t = 
   let values =  values_of_export meta export_map in
-  let effect = get_effect meta maybe_pure external_ids in
-  {values; 
-   effect ; 
-   npm_package_path = Js_packages_state.get_packages_info ();
-   cmj_case ;
+  
+  Js_cmj_format.mk
+    ~values
+    ~effect 
+    ~npm_package_path: (Js_packages_state.get_packages_info ())
+   ~cmj_case 
     (* FIXME: make sure [-o] would not change its case 
       add test for ns/non-ns
     *)
-  }
+  
 

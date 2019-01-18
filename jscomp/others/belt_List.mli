@@ -358,6 +358,19 @@ val reduce:  'a t -> 'b -> ('b -> 'a -> 'b) -> 'b
       reduce [1;2;3;4] [] add = [4;3;2;1];
     ]}
 *)
+
+val reduceWithIndexU:  'a t -> 'b -> ('b -> 'a -> int -> 'b [@bs]) -> 'b
+val reduceWithIndex:  'a t -> 'b -> ('b -> 'a -> int -> 'b) -> 'b
+(** [reduceWithIndex xs f]
+
+    Applies [f] to each element of [xs] from beginning to end. Function [f] has three parameters: the item
+    from the list and an “accumulator”, which starts with a value of [init] and the index of each element. [reduceWithIndex]
+    returns the final value of the accumulator.
+    
+    @example {[
+      reduceWithIndex [1;2;3;4] 0 (fun acc x i -> acc + x + i) = 16;;
+    ]}
+*)
   
 val reduceReverseU: 'a t -> 'b -> ('b -> 'a ->  'b [@bs]) -> 'b
 val reduceReverse: 'a t -> 'b -> ('b -> 'a ->  'b) -> 'b
@@ -560,6 +573,41 @@ val keep: 'a t ->  ('a -> bool) -> 'a t
       [2;4]
     ]}
 *)
+
+
+val filter: 'a t ->  ('a -> bool) -> 'a t
+[@@deprecated "This function will soon be deprecated. Please, use `List.keep` instead."]
+(** [filter  xs p] returns a list of all elements in [xs] which satisfy the predicate function [p]
+
+    @example {[
+      filter [1;2;3;4] (fun x -> x mod 2 = 0) =
+      [2;4]
+    ]}
+*)
+
+val keepWithIndexU: 'a t ->  ('a -> int -> bool [@bs]) -> 'a t
+val keepWithIndex: 'a t ->  ('a -> int -> bool) -> 'a t
+(** [keepWithIndex xs p] returns a list of all elements in [xs] which satisfy the predicate function [p]
+
+    @example {[
+      keepWithIndex [1;2;3;4] (fun _x i -> i mod 2 = 0)
+      =
+      [1;3]
+    ]}
+*)
+
+
+val filterWithIndex: 'a t ->  ('a -> int -> bool) -> 'a t
+[@@deprecated "This function will soon be deprecated. Please, use `List.keepWithIndex` instead."]
+(** [filterWithIndex xs p] returns a list of all elements in [xs] which satisfy the predicate function [p]
+
+    @example {[
+      filterWithIndex [1;2;3;4] (fun _x i -> i mod 2 = 0)
+      =
+      [1;3]
+    ]}
+*)
+
 val keepMapU: 'a t -> ('a -> 'b option [@bs]) -> 'b t
 val keepMap: 'a t -> ('a -> 'b option) -> 'b t
 (** [keepMap xs f] applies [f] to each element of [xs]. If [f xi] returns [Some value], then [value] is kept in the resulting list; if [f xi] returns [None], the element is not retained in the result.

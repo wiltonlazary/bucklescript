@@ -33,7 +33,7 @@ var v = ( true);
 
 var suites_000 = /* tuple */[
   "caml_bool_eq_caml_bool",
-  (function () {
+  (function (param) {
       return /* Eq */Block.__(0, [
                 u,
                 true
@@ -44,7 +44,7 @@ var suites_000 = /* tuple */[
 var suites_001 = /* :: */[
   /* tuple */[
     "js_bool_eq_js_bool",
-    (function () {
+    (function (param) {
         return /* Eq */Block.__(0, [
                   v,
                   true
@@ -54,10 +54,10 @@ var suites_001 = /* :: */[
   /* :: */[
     /* tuple */[
       "js_bool_neq_acml_bool",
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     true,
-                    true === (true)
+                    true === true
                   ]);
         })
     ],
@@ -127,7 +127,7 @@ var bool_array = /* array */[
   false
 ];
 
-Mt.from_pair_suites("js_bool_test.ml", suites);
+Mt.from_pair_suites("Js_bool_test", suites);
 
 var f3 = true;
 

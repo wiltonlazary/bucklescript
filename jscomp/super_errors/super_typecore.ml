@@ -111,20 +111,13 @@ let print_expr_type_clash env trace ppf =
       @{<info>Moving these types above the component declaration@} should resolve this!@]\
     @]"
     (* This one above shouldn't catch any false positives, so we can safely not display the original type clash error. *)
-  else begin
-    if Super_reason_react.is_array_wanted_react_element trace then
+  else if Super_reason_react.is_component_spec_wanted_react_element trace then
     fprintf ppf "@[<v>\
-      @[@{<info>Did you pass an array as a ReasonReact DOM (lower-case) component's children?@}@ If not, disregard this.@ \
-      If so, please use `ReasonReact.createDomElement`:@ https://reasonml.github.io/reason-react/docs/en/children.html@]@,@,\
+      @[@{<info>Did you want to create a ReasonReact element without using JSX?@}@ If not, disregard this.@ \
+      If so, don't forget to wrap this value in `ReasonReact.element` yourself:@ https://reasonml.github.io/reason-react/docs/en/jsx.html#capitalized@]@,@,\
       @[@{<info>Here's the original error message@}@]@,\
-    @]"
-    else if Super_reason_react.is_component_spec_wanted_react_element trace then
-      fprintf ppf "@[<v>\
-        @[@{<info>Did you want to create a ReasonReact element without using JSX?@}@ If not, disregard this.@ \
-        If so, don't forget to wrap this value in `ReasonReact.element` yourself:@ https://reasonml.github.io/reason-react/docs/en/jsx.html#capitalized@]@,@,\
-        @[@{<info>Here's the original error message@}@]@,\
-      @]";
-  begin
+    @]";
+    begin
     let bottom_aliases_result = bottom_aliases trace in
     let missing_arguments = match bottom_aliases_result with
     | Some (actual, expected) -> collect_missing_arguments env actual expected
@@ -134,8 +127,17 @@ let print_expr_type_clash env trace ppf =
       Format.pp_print_list
         ~pp_sep:(fun ppf _ -> fprintf ppf ",@ ")
         (fun ppf (label, argtype) ->
+#if OCAML_VERSION =~ ">4.03.0" then
+          match label with 
+          | Nolabel -> fprintf ppf "@[%a@]" type_expr argtype
+          | Labelled label -> 
+            fprintf ppf "@[(~%s: %a)@]" label type_expr argtype
+          | Optional label -> 
+            fprintf ppf "@[(?%s: %a)@]" label type_expr argtype
+#else
           if label = "" then fprintf ppf "@[%a@]" type_expr argtype
           else fprintf ppf "@[(~%s: %a)@]" label type_expr argtype
+#end          
         )
     in
     match missing_arguments with
@@ -172,7 +174,6 @@ let print_expr_type_clash env trace ppf =
             fprintf ppf "But somewhere wanted:");
       show_extra_help ppf env trace;
     end
-  end
 (* taken from https://github.com/BuckleScript/ocaml/blob/d4144647d1bf9bc7dc3aadc24c25a7efa3a67915/typing/typecore.ml#L3769 *)
 (* modified branches are commented *)
 let report_error env ppf = function
@@ -205,7 +206,13 @@ let report_error env ppf = function
           fprintf ppf "but on the right-hand side it has type")
   | Multiply_bound_variable name ->
       fprintf ppf "Variable %s is bound several times in this matching" name
-  | Orpat_vars id ->
+  | Orpat_vars 
+#if OCAML_VERSION  =~ ">4.03.0" then 
+    (id, _)
+#else
+    id 
+#end    
+    ->
       fprintf ppf "Variable %s must occur on both sides of this | pattern"
         (Ident.name id)
   | Expr_type_clash trace ->
@@ -248,7 +255,13 @@ let report_error env ppf = function
       end
   | Apply_wrong_label (l, ty) ->
       let print_label ppf = function
-        | "" -> fprintf ppf "without label"
+        | 
+#if OCAML_VERSION =~ ">4.03.0" then
+          Asttypes.Nolabel
+#else
+          "" 
+#end           
+              -> fprintf ppf "without label"
         | l ->
             fprintf ppf "with label %s" (prefixed_label_name l)
       in
@@ -266,7 +279,13 @@ let report_error env ppf = function
         print_labels labels
   | Label_not_mutable lid ->
       fprintf ppf "The record field %a is not mutable" longident lid
-  | Wrong_name (eorp, ty, kind, p, lid) as foo ->
+  | Wrong_name 
+#if OCAML_VERSION =~ ">4.03.0" then
+    (eorp, ty, kind, p, lid,_)
+#else
+    (eorp, ty, kind, p, lid)
+#end    
+     as foo ->
       (* forwarded *)
       Typecore.report_error env ppf foo
       (* reset_and_mark_loops ty;
@@ -291,17 +310,35 @@ let report_error env ppf = function
              name kind)
   | Invalid_format msg ->
       fprintf ppf "%s" msg
-  | Undefined_method (ty, me) ->
+  | Undefined_method 
+#if OCAML_VERSION =~ ">4.03.0" then
+    (ty, me,_) 
+#else    
+    (ty, me)     
+#end
+    ->
       reset_and_mark_loops ty;
       fprintf ppf
         "@[<v>@[This expression has type@;<1 2>%a@]@,\
          It has no method %s@]" type_expr ty me
-  | Undefined_inherited_method me ->
+  | Undefined_inherited_method 
+#if OCAML_VERSION =~ ">4.03.0" then
+    (me, _)
+#else
+    me 
+#end    
+    ->
       fprintf ppf "This expression has no method %s" me
   | Virtual_class cl ->
       fprintf ppf "Cannot instantiate the virtual class %a"
         longident cl
-  | Unbound_instance_variable v ->
+  | Unbound_instance_variable 
+#if OCAML_VERSION  =~ ">4.03.0" then
+    (v,_)
+#else    
+    v 
+#end    
+    ->
       fprintf ppf "Unbound instance variable %s" v
   | Instance_variable_not_mutable (b, v) ->
       if b then
@@ -341,7 +378,12 @@ let report_error env ppf = function
       end
   | Abstract_wrong_label (l, ty) ->
       let label_mark = function
-        | "" -> "but its first argument is not labelled"
+#if OCAML_VERSION =~ ">4.03.0" then
+        | Asttypes.Nolabel -> 
+#else
+        | "" ->
+#end        
+         "but its first argument is not labelled"
         |  l -> sprintf "but its first argument is labelled %s"
           (prefixed_label_name l) in
       reset_and_mark_loops ty;
@@ -406,7 +448,14 @@ let report_error env ppf = function
   | Exception_pattern_below_toplevel ->
       fprintf ppf
         "@[Exception patterns must be at the top level of a match case.@]"
-
+#if OCAML_VERSION =~ ">4.03.0" then 
+    | (Inlined_record_escape|Inlined_record_expected|
+       Invalid_extension_constructor_payload|Not_an_extension_constructor|
+       Illegal_letrec_pat|Illegal_letrec_expr|Illegal_class_expr|
+       Unrefuted_pattern _|Literal_overflow _|Unknown_literal (_, _))
+        -> 
+        fprintf ppf "TODO" (* TODO**)
+#end
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error env ppf err)
 

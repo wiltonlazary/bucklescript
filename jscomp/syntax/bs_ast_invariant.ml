@@ -33,36 +33,87 @@ let is_bs_attribute txt =
    String.unsafe_get txt 2 = '.'
   )
 
-let used_attributes : Parsetree.attribute Hash_set_poly.t = Hash_set_poly.create 16 
+let used_attributes : _ Hash_set_poly.t = Hash_set_poly.create 16 
 
-let mark_used_bs_attribute (x : Parsetree.attribute) = 
-  Hash_set_poly.add used_attributes x
+#if false then
+let dump_attribute fmt = (fun ( (sloc : string Asttypes.loc),payload) -> 
+    Format.fprintf fmt "@[%s %a@]" sloc.txt (Printast.payload 0 ) payload
+    )
 
-let warn_unused_attributes attrs = 
+let dump_used_attributes fmt = 
+  Format.fprintf fmt "Used attributes Listing Start:@.";
+  Hash_set_poly.iter  (fun attr -> dump_attribute fmt attr) used_attributes;
+  Format.fprintf fmt "Used attributes Listing End:@."
+#end
+
+(* only mark non-ghost used bs attribute *)
+let mark_used_bs_attribute ((x,_) : Parsetree.attribute) = 
+  if not x.loc.loc_ghost then
+    Hash_set_poly.add used_attributes x
+
+let dummy_unused_attribute : Warnings.t = (Bs_unused_attribute "")
+
+
+
+let warn_unused_attribute 
+  (({txt; loc} as sloc, _) : Parsetree.attribute) = 
+  if is_bs_attribute txt && 
+     not loc.loc_ghost &&
+     not (Hash_set_poly.mem used_attributes sloc) then 
+    begin    
+#if false then (*COMMENT*)
+      dump_used_attributes Format.err_formatter; 
+      dump_attribute Format.err_formatter attr ;
+#end
+      Location.prerr_warning loc (Bs_unused_attribute txt)
+    end
+
+let warn_discarded_unused_attributes (attrs : Parsetree.attributes) = 
   if attrs <> [] then 
-    List.iter (fun (({txt; loc}, _) as a : Parsetree.attribute) -> 
-        if is_bs_attribute txt && 
-           not (Hash_set_poly.mem used_attributes a) then 
-          Location.prerr_warning loc (Warnings.Bs_unused_attribute txt)
-      ) attrs
-
-let emit_external_warnings : Bs_ast_iterator.iterator=
+    Ext_list.iter attrs warn_unused_attribute
+    
+#if OCAML_VERSION =~ ">4.03.0" then 
+type iterator = Ast_iterator.iterator
+let default_iterator = Ast_iterator.default_iterator
+#else
+type iterator = Bs_ast_iterator.iterator      
+let default_iterator = Bs_ast_iterator.default_iterator
+#end
+(* Note we only used Bs_ast_iterator here, we can reuse compiler-libs instead of 
+   rolling our own*)
+let emit_external_warnings : iterator=
   {
-    Bs_ast_iterator.default_iterator with
-    attribute = (fun _ a ->
-        match a with
-        | {txt ; loc}, _ ->
-          if is_bs_attribute txt && 
-             not (Hash_set_poly.mem used_attributes a)  then
-            Location.prerr_warning loc (Bs_unused_attribute txt)
-      );
+    default_iterator with
+    attribute = (fun _ attr -> warn_unused_attribute attr);
     expr = (fun self a -> 
-        match a.Parsetree.pexp_desc with 
-        | Pexp_constant (Const_string (_, Some s)) 
-          when Ext_string.equal s Literals.unescaped_j_delimiter 
-            || Ext_string.equal s Literals.unescaped_js_delimiter -> 
+        match a.pexp_desc with 
+        | Pexp_constant (
+#if OCAML_VERSION =~ ">4.03.0"  then
+          Pconst_string
+#else          
+          Const_string 
+#end
+          (_, Some s)) 
+          when Ast_utf8_string_interp.is_unescaped s -> 
           Bs_warnings.error_unescaped_delimiter a.pexp_loc s 
-        | _ -> Bs_ast_iterator.default_iterator.expr self a 
+#if OCAML_VERSION =~ ">4.03.0" then
+        | Pexp_constant(Pconst_integer(s,None)) -> 
+          (* range check using int32 
+            It is better to give a warning instead of error to avoid make people unhappy.
+            It also has restrictions in which platform bsc is running on since it will 
+            affect int ranges
+          *)
+          (
+            try 
+              ignore (
+                if String.length s = 0 || s.[0] = '-' then 
+                  Int32.of_string s 
+                else Int32.of_string ("-" ^ s))
+            with _ ->              
+              Bs_warnings.warn_literal_overflow a.pexp_loc
+          )
+#end
+        | _ -> default_iterator.expr self a 
       );
     value_description =
       (fun self v -> 
@@ -80,7 +131,14 @@ let emit_external_warnings : Bs_ast_iterator.iterator=
              ~loc:pval_loc
              "%%identity expect its type to be of form 'a -> 'b (arity 1)"
          | _ ->
-           Bs_ast_iterator.default_iterator.value_description self v 
-
+           default_iterator.value_description self v 
       )
   }
+
+let emit_external_warnings_on_structure  (stru : Parsetree.structure) = 
+  if Warnings.is_active dummy_unused_attribute then 
+    emit_external_warnings.structure emit_external_warnings stru
+
+let emit_external_warnings_on_signature  (sigi : Parsetree.signature) = 
+  if Warnings.is_active dummy_unused_attribute then 
+    emit_external_warnings.signature emit_external_warnings sigi

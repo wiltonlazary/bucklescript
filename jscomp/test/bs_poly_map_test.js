@@ -32,7 +32,7 @@ function setOfArray(x) {
   return Belt_Set.fromArray(x, Icmp);
 }
 
-function emptyMap() {
+function emptyMap(param) {
   return {
           cmp: Icmp[/* cmp */0],
           data: Belt_MapDict.empty
@@ -40,7 +40,7 @@ function emptyMap() {
 }
 
 function mergeInter(s1, s2) {
-  var m = Belt_Map.merge(s1, s2, (function (_, v1, v2) {
+  var m = Belt_Map.merge(s1, s2, (function (k, v1, v2) {
           if (v1 !== undefined && v2 !== undefined) {
             return /* () */0;
           }
@@ -51,7 +51,7 @@ function mergeInter(s1, s2) {
 }
 
 function mergeUnion(s1, s2) {
-  var m = Belt_Map.merge(s1, s2, (function (_, v1, v2) {
+  var m = Belt_Map.merge(s1, s2, (function (k, v1, v2) {
           if (v1 !== undefined || v2 !== undefined) {
             return /* () */0;
           }
@@ -62,7 +62,7 @@ function mergeUnion(s1, s2) {
 }
 
 function mergeDiff(s1, s2) {
-  var m = Belt_Map.merge(s1, s2, (function (_, v1, v2) {
+  var m = Belt_Map.merge(s1, s2, (function (k, v1, v2) {
           if (v1 !== undefined && v2 === undefined) {
             return /* () */0;
           }
@@ -308,7 +308,7 @@ b("File \"bs_poly_map_test.ml\", line 139, characters 4-11", Belt_Array.eq(Belt_
                 return 5001 + i | 0;
               })), Caml_obj.caml_equal));
 
-Mt.from_pair_suites("bs_poly_map_test.ml", suites[0]);
+Mt.from_pair_suites("Bs_poly_map_test", suites[0]);
 
 var M = 0;
 

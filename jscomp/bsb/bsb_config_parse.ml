@@ -25,7 +25,7 @@
 let config_file_bak = "bsconfig.json.bak"
 let get_list_string = Bsb_build_util.get_list_string
 let (//) = Ext_path.combine
-
+let current_package : Bsb_pkg_types.t = Global Bs_version.package_name
 let resolve_package cwd  package_name = 
   let x =  Bsb_pkg.resolve_bs_package ~cwd package_name  in
   {
@@ -124,15 +124,14 @@ let interpret_json
   : Bsb_config_types.t =
 
   let reason_react_jsx = ref None in 
-  let config_json = (cwd // Literals.bsconfig_json) in
+  let config_json = cwd // Literals.bsconfig_json in
   let refmt_flags = ref Bsb_default.refmt_flags in
   let bs_external_includes = ref [] in 
   (** we should not resolve it too early,
       since it is external configuration, no {!Bsb_build_util.convert_and_resolve_path}
   *)
   let bsc_flags = ref Bsb_default.bsc_flags in  
-  let ppx_flags = ref []in 
-
+  let ppx_flags = ref [] in 
   let js_post_build_cmd = ref None in 
   let built_in_package = ref None in
   let generate_merlin = ref true in 
@@ -178,6 +177,18 @@ let interpret_json
         
 
     in 
+    let bs_suffix = 
+          match String_map.find_opt Bsb_build_schemas.suffix map with 
+          | None -> false  
+          | Some (Str {str} as config ) -> 
+            if str = Literals.suffix_js then false 
+            else if str = Literals.suffix_bs_js then true
+            else Bsb_exception.config_error config 
+              "expect .bs.js or .js string here"
+          | Some config -> 
+            Bsb_exception.config_error config 
+              "expect .bs.js or .js string here"
+    in   
     (* The default situation is empty *)
     (match String_map.find_opt Bsb_build_schemas.use_stdlib map with      
      | Some (False _) -> 
@@ -186,7 +197,7 @@ let interpret_json
      | Some _ ->
         begin
           let stdlib_path = 
-              Bsb_pkg.resolve_bs_package ~cwd Bs_version.package_name in 
+              Bsb_pkg.resolve_bs_package ~cwd current_package in 
           let json_spec = 
               Ext_json_parse.parse_json_from_file 
               (Filename.concat stdlib_path Literals.package_json) in 
@@ -197,17 +208,17 @@ let interpret_json
               if str <> Bs_version.version then 
               (
                 Format.fprintf Format.err_formatter
-                "@{<error> bs-platform version mismatch@} Running bsb (%s)@{<info>%s@} vs vendored (%s)@{<info>%s@}@."
-                    (Filename.dirname (Filename.dirname Sys.executable_name))
-                    str 
-                    stdlib_path 
+                "@{<error>bs-platform version mismatch@} Running bsb @{<info>%s@} (%s) vs vendored @{<info>%s@} (%s)@."
                     Bs_version.version
+                    (Filename.dirname (Filename.dirname Sys.executable_name))
+                    str
+                    stdlib_path 
                 ;
               exit 2)
                 
             | _ -> assert false);
             built_in_package := Some {
-              Bsb_config_types.package_name = Bs_version.package_name;
+              Bsb_config_types.package_name = current_package;
               package_install_path = stdlib_path // Bsb_config.lib_ocaml;
             }
              
@@ -221,6 +232,17 @@ let interpret_json
         Bsb_package_specs.from_json x 
       | None ->  Bsb_package_specs.default_package_specs 
     in
+    let pp_flags : string option = 
+      match String_map.find_opt Bsb_build_schemas.pp_flags map with 
+      | Some (Str {str = p }) ->
+        if p = "" then failwith "invalid pp, empty string found"
+        else 
+          Some (Bsb_build_util.resolve_bsb_magic_file ~cwd ~desc:Bsb_build_schemas.pp_flags p)
+      | Some x ->    
+        Bsb_exception.errorf ~loc:(Ext_json.loc_of x) "pp-flags expected a string"
+      | None ->  
+        None      
+    in 
     map
     |? (Bsb_build_schemas.reason, `Obj begin fun m -> 
         match String_map.find_opt Bsb_build_schemas.react_jsx m with 
@@ -252,24 +274,24 @@ let interpret_json
         |> ignore
       end)
 
-    |? (Bsb_build_schemas.bs_dependencies, `Arr (fun s -> bs_dependencies := Bsb_build_util.get_list_string s |> Ext_list.map (resolve_package cwd)))
+    |? (Bsb_build_schemas.bs_dependencies, `Arr (fun s -> bs_dependencies :=  Ext_list.map (Bsb_build_util.get_list_string s) (fun s -> resolve_package cwd (Bsb_pkg_types.string_as_package s))))
     |? (Bsb_build_schemas.bs_dev_dependencies,
         `Arr (fun s ->
             if not  not_dev then 
               bs_dev_dependencies
-              := Bsb_build_util.get_list_string s
-                 |> Ext_list.map (resolve_package cwd))
+              :=  Ext_list.map (Bsb_build_util.get_list_string s) (fun s -> resolve_package cwd (Bsb_pkg_types.string_as_package s)))
        )
 
     (* More design *)
     |? (Bsb_build_schemas.bs_external_includes, `Arr (fun s -> bs_external_includes := get_list_string s))
     |? (Bsb_build_schemas.bsc_flags, `Arr (fun s -> bsc_flags := Bsb_build_util.get_list_string_acc s !bsc_flags))
     |? (Bsb_build_schemas.ppx_flags, `Arr (fun s -> 
-        ppx_flags := s |> get_list_string |> Ext_list.map (fun p ->
+        ppx_flags := Ext_list.map (get_list_string s) (fun p ->
             if p = "" then failwith "invalid ppx, empty string found"
             else Bsb_build_util.resolve_bsb_magic_file ~cwd ~desc:Bsb_build_schemas.ppx_flags p
           )
       ))
+
     |? (Bsb_build_schemas.cut_generators, `Bool (fun b -> cut_generators := b))
     |? (Bsb_build_schemas.generators, `Arr (fun s ->
         generators :=
@@ -289,16 +311,13 @@ let interpret_json
     |> ignore ;
     begin match String_map.find_opt Bsb_build_schemas.sources map with 
       | Some x -> 
-        let res = Bsb_parse_sources.parse_sources 
-            {not_dev; 
-             dir_index =
-               Bsb_dir_index.lib_dir_index; 
-             cwd = Filename.current_dir_name; 
-             root = cwd;
-             cut_generators = !cut_generators;
-             traverse = false;
-             namespace; 
-            }  x in 
+        let res = Bsb_parse_sources.scan
+            ~not_dev
+            ~root: cwd
+            ~cut_generators: !cut_generators
+            ~clean_staled_bs_js:bs_suffix
+            ~namespace
+            x in 
         if generate_watch_metadata then
           Bsb_watcher_gen.generate_sourcedirs_meta cwd res ;     
         begin match List.sort Ext_file_pp.interval_compare  res.intervals with
@@ -321,15 +340,7 @@ let interpret_json
           | Some (Obj {map }) -> Bsb_warning.from_map map 
           | Some config -> Bsb_exception.config_error config "expect an object"
         in 
-        let bs_suffix = 
-          match String_map.find_opt Bsb_build_schemas.suffix map with 
-          | None -> false  
-          | Some (Str {str = ".js"} ) -> false 
-          | Some (Str {str = ".bs.js"}) -> true           
-          | Some config -> 
-            Bsb_exception.config_error config 
-              "expect .bs.js or .js string here"
-        in   
+
         {
           bs_suffix ;
           package_name ;
@@ -338,6 +349,7 @@ let interpret_json
           external_includes = !bs_external_includes;
           bsc_flags = !bsc_flags ;
           ppx_flags = !ppx_flags ;
+          pp_flags = pp_flags ;          
           bs_dependencies = !bs_dependencies;
           bs_dev_dependencies = !bs_dev_dependencies;
           refmt;

@@ -3,7 +3,7 @@
 var Mt = require("./mt.js");
 var Block = require("../../lib/js/block.js");
 var Curry = require("../../lib/js/curry.js");
-var Js_primitive = require("../../lib/js/js_primitive.js");
+var Caml_option = require("../../lib/js/caml_option.js");
 
 var suites = /* record */[/* contents : [] */0];
 
@@ -14,7 +14,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -42,7 +42,7 @@ function f2(x) {
   }
 }
 
-function f5(h, _) {
+function f5(h, x) {
   var u = Curry._1(h, 32);
   if (u !== null) {
     return u + 1 | 0;
@@ -87,7 +87,7 @@ function f9(x) {
   if (x === null) {
     return undefined;
   } else {
-    return Js_primitive.some(x);
+    return Caml_option.some(x);
   }
 }
 
@@ -127,7 +127,7 @@ function f2$1(x) {
   }
 }
 
-function f5$1(h, _) {
+function f5$1(h, x) {
   var u = Curry._1(h, 32);
   if (u !== undefined) {
     return u + 1 | 0;
@@ -172,7 +172,7 @@ function f9$1(x) {
   if (x === undefined) {
     return undefined;
   } else {
-    return Js_primitive.some(x);
+    return Caml_option.some(x);
   }
 }
 
@@ -212,7 +212,7 @@ function f2$2(x) {
   }
 }
 
-function f5$2(h, _) {
+function f5$2(h, x) {
   var u = Curry._1(h, 32);
   if (u == null) {
     return 3;
@@ -255,7 +255,7 @@ function f9$2(x) {
   if (x == null) {
     return undefined;
   } else {
-    return Js_primitive.some(x);
+    return Caml_option.some(x);
   }
 }
 
@@ -281,19 +281,19 @@ var Test_null_def = /* module */[
 
 eq("File \"test_zero_nullable.ml\", line 227, characters 7-14", f1$2(0), 1);
 
-eq("File \"test_zero_nullable.ml\", line 228, characters 7-14", f1$2((null)), 3);
+eq("File \"test_zero_nullable.ml\", line 228, characters 7-14", f1$2(null), 3);
 
-eq("File \"test_zero_nullable.ml\", line 229, characters 7-14", f1$2((undefined)), 3);
+eq("File \"test_zero_nullable.ml\", line 229, characters 7-14", f1$2(undefined), 3);
 
 eq("File \"test_zero_nullable.ml\", line 231, characters 7-14", f1(0), 1);
 
-eq("File \"test_zero_nullable.ml\", line 232, characters 7-14", f1((null)), 3);
+eq("File \"test_zero_nullable.ml\", line 232, characters 7-14", f1(null), 3);
 
 eq("File \"test_zero_nullable.ml\", line 234, characters 7-14", f1$1(0), 1);
 
-eq("File \"test_zero_nullable.ml\", line 235, characters 7-14", f1$1((undefined)), 3);
+eq("File \"test_zero_nullable.ml\", line 235, characters 7-14", f1$1(undefined), 3);
 
-Mt.from_pair_suites("test_zero_nullable.ml", suites[0]);
+Mt.from_pair_suites("Test_zero_nullable", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

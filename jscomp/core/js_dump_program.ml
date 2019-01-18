@@ -67,13 +67,13 @@ let node_program ~output_dir f ( x : J.deps_program) =
       L.require
       Ext_pp_scope.empty
       f
-      (Ext_list.map 
+      (Ext_list.map x.modules 
          (fun x -> 
             Lam_module_ident.id x,
             Js_name_of_module_id.string_of_module_id ~output_dir
               NodeJS 
               x)
-         x.modules)
+         )
   in
   program f cxt x.program  
 
@@ -104,16 +104,14 @@ let amd_program ~output_dir kind f (  x : J.deps_program) =
   P.string f L.exports;
 
   let cxt = 
-    List.fold_left (fun cxt x ->         
+    Ext_list.fold_left x.modules cxt (fun x cxt ->         
         let id = Lam_module_ident.id x in
         P.string f L.comma;
         P.space f ; 
-        Ext_pp_scope.ident cxt f id
-      ) cxt x.modules     
-  in
+        Ext_pp_scope.ident cxt f id) in
   P.string f ")";
   let v = P.brace_vgroup f 1 @@ (fun _ -> 
-      let () = P.string f L.strict_directive in 
+      P.string f L.strict_directive;
       program f cxt x.program
     ) in
   P.string f ")";
@@ -125,13 +123,13 @@ let es6_program  ~output_dir fmt f (  x : J.deps_program) =
     Js_dump_import_export.imports
       Ext_pp_scope.empty
       f
-      (Ext_list.map 
+      (Ext_list.map x.modules
          (fun x -> 
             Lam_module_ident.id x,
             Js_name_of_module_id.string_of_module_id ~output_dir
               fmt 
               x)
-         x.modules)
+         )
   in
   let () = P.force_newline f in 
   let cxt = Js_dump.statement_list true cxt f x.program.block in 

@@ -33,7 +33,7 @@ function prepare() {
 
     e(`hash camlp4 2>/dev/null || { echo >&2 "camlp4 not installed. Please install: opam install camlp4"; exit 1; }`)
 
-    e(`./release.sh`)
+    require('../scripts/release').run()
 
     try {
       fs.unlinkSync(path.join(__dirname, 'bin', 'js_compiler.ml'))
@@ -78,7 +78,7 @@ var includes = [`stdlib`, `runtime`, `others`].map(x => path.join(__dirname, x))
 var cmi_files =
     [
         // `lazy`,
-        `js`, `js_unsafe`, `js_re`, `js_array`, `js_null`, `js_undefined`, `js_internal`,
+        `js`, `js_unsafe`, `js_re`, `js_array`, `js_null`, `js_undefined`,
         `js_types`, `js_null_undefined`, `js_dict`, `js_exn`, `js_string`, `js_vector`,
         `js_date`,
         `js_console`,
@@ -88,7 +88,7 @@ var cmi_files =
         `arrayLabels`, `bytesLabels`, `complex`, `gc`, `genlex`, `listLabels`,
         `moreLabels`, `queue`, `scanf`, `sort`,`stack`, `stdLabels`, `stream`,
         `stringLabels`,
-
+        `dom`,
         `belt`,
         `belt_Id`,
         `belt_Array`,
@@ -124,6 +124,6 @@ e(`js_of_ocaml --disable share --toplevel +weak.js ./polyfill.js jsc.byte ${incl
 
 
 
-//  note it is preferred to run ./release.sh && ./js.sh otherwise  amdjs is not really latest
+
 
 

@@ -89,17 +89,15 @@ val dummy : t
 
 val output_of_expression :
     Lam_compile_context.continuation ->
-    Lam_compile_context.return_type ->
-    Lam.t -> (* original lambda *)
+  
     J.expression -> (* compiled expression *)
+    no_effects: bool Lazy.t -> 
     t
 
 (** - needed for instrument [return] statement properly
 *)
 val output_of_block_and_expression :
     Lam_compile_context.continuation ->
-    Lam_compile_context.return_type ->
-    Lam.t ->
     J.block ->
     J.expression ->
     t

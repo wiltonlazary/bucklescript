@@ -314,10 +314,10 @@ var s = List.fold_left((function (acc, param) {
       ]
     ]);
 
-Mt.from_pair_suites("map_find_test.ml", /* :: */[
+Mt.from_pair_suites("Map_find_test", /* :: */[
       /* tuple */[
         "int",
-        (function () {
+        (function (param) {
             return /* Eq */Block.__(0, [
                       find(10, m),
                       /* "a" */97
@@ -327,7 +327,7 @@ Mt.from_pair_suites("map_find_test.ml", /* :: */[
       /* :: */[
         /* tuple */[
           "string",
-          (function () {
+          (function (param) {
               return /* Eq */Block.__(0, [
                         find$1("10", s),
                         /* "a" */97

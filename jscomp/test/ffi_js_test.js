@@ -8,7 +8,7 @@ var keys = ( function (x){return Object.keys(x)});
 
   function $$higher_order(x){
    return function(y,z){
-      return x + y + z 
+      return x + y + z
    }
   }
 
@@ -25,7 +25,7 @@ function eq(loc, param) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -134,7 +134,7 @@ function vvvv(z) {
   return z.ff_pipe2();
 }
 
-function create_prim() {
+function create_prim(param) {
   return {
           "x'": 3,
           "x''": 3,
@@ -173,7 +173,7 @@ function ffff(x) {
   return /* () */0;
 }
 
-Mt.from_pair_suites("ffi_js_test.ml", suites[0]);
+Mt.from_pair_suites("Ffi_js_test", suites[0]);
 
 exports.keys = keys;
 exports.suites = suites;

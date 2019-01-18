@@ -384,17 +384,20 @@ let to_string_ident : Longident.t =
     Ldot (Ldot (Lident "Js", "String"), "make")
 
 
+let escaped_j_delimiter =  "*j" (* not user level syntax allowed *)
+let unescaped_j_delimiter = "j"
+let unescaped_js_delimiter = "js"
 
-let escaped = Some Literals.escaped_j_delimiter 
+let escaped = Some escaped_j_delimiter 
 
 let concat_exp 
   (a : Parsetree.expression)
   (b : Parsetree.expression) : Parsetree.expression = 
   let loc = Bs_loc.merge a.pexp_loc b.pexp_loc in 
-  Exp.apply ~loc 
+  Ast_compatible.apply_simple ~loc 
   (Exp.ident { txt =concat_ident; loc})
-    ["",a ;
-     "",b]
+    [a ;
+     b]
 
 let border = String.length "{j|"
 
@@ -405,19 +408,17 @@ let aux loc (segment : segment) =
     begin match kind with 
       | String ->         
         let loc = update border start finish  loc  in 
-        Exp.constant 
-          ~loc
-          (Const_string (content, escaped)) 
+        Ast_compatible.const_exp_string
+          content ?delimiter:escaped ~loc
       | Var (soffset, foffset) ->
         let loc = {
           loc with 
           loc_start = update_position  (soffset + border) start loc.loc_start ;
           loc_end = update_position (foffset + border) finish loc.loc_start
         } in 
-        Exp.apply ~loc 
+        Ast_compatible.apply_simple ~loc 
           (Exp.ident ~loc {loc ; txt = to_string_ident })
           [
-            "",
             Exp.ident ~loc {loc ; txt = Lident content}
           ]
     end 
@@ -442,8 +443,7 @@ let transform_interp loc s =
     let rev_segments =  cxt.segments in 
     match rev_segments with 
     | [] -> 
-      Exp.constant ~loc 
-        (Const_string ("", Some Literals.escaped_j_delimiter)) 
+      Ast_compatible.const_exp_string ~loc ""  ?delimiter:escaped
     | [ segment] -> 
       aux loc segment 
     | a::rest -> 
@@ -456,3 +456,25 @@ let transform_interp loc s =
     -> 
     Location.raise_errorf ~loc:(update border start pos loc )
       "%a"  pp_error error 
+
+
+let transform (e : Parsetree.expression) s delim : Parsetree.expression = 
+    if Ext_string.equal delim unescaped_js_delimiter then
+        let js_str = Ast_utf8_string.transform e.pexp_loc s in
+        { e with pexp_desc =
+                       Pexp_constant (
+#if OCAML_VERSION =~ ">4.03.0" then
+            Pconst_string
+#else            
+            Const_string 
+#end                                     
+                         (js_str, escaped))}
+    else if Ext_string.equal delim unescaped_j_delimiter then
+            transform_interp e.pexp_loc s
+    else e
+
+let is_unicode_string opt = Ext_string.equal opt escaped_j_delimiter    
+
+let is_unescaped s = 
+  Ext_string.equal s unescaped_j_delimiter
+  || Ext_string.equal s unescaped_js_delimiter

@@ -23,13 +23,32 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. *)
 open Ast_helper
 
+
 let rec unroll_function_aux 
   (acc : string list)
   (body : Parsetree.expression) : string list * string =
   match body.pexp_desc with
-  | Pexp_constant(Const_string(block,_)) -> acc, block
-  | Pexp_fun("",None,{ppat_desc = Ppat_var s},cont) -> 
-    unroll_function_aux (s.txt::acc) cont
+  | Pexp_constant(
+#if OCAML_VERSION =~ ">4.03.0" then 
+    Pconst_string
+#else    
+    Const_string
+#end    
+    (block,_)) -> acc, block
+  | Pexp_fun(arg_label,_,pat,cont)
+    when Ast_compatible.is_arg_label_simple arg_label -> 
+    (match pat.ppat_desc with 
+    | Ppat_var s -> 
+      unroll_function_aux (s.txt::acc) cont
+    | Ppat_any -> 
+      unroll_function_aux ("_"::acc) cont
+    | Ppat_constraint _ -> 
+      Location.raise_errorf ~loc:body.pexp_loc  
+      "type annotation around bs.raw arguments is invalid, please put in this form: let f : t1 -> t2 = fun%%raw param1 param2 -> .."
+    | _ -> 
+      Location.raise_errorf ~loc:body.pexp_loc  
+      "bs.raw can only be applied to a string or a special function form "
+    )
   | _ -> 
     Location.raise_errorf ~loc:body.pexp_loc  
     "bs.raw can only be applied to a string or a special function form "
@@ -53,24 +72,34 @@ let handle_extension record_as_js_object e (self : Bs_ast_mapper.mapper)
   begin match txt with
     | "bs.raw" | "raw" -> 
       begin match payload with 
-      | PStr [{pstr_desc = Pstr_eval({pexp_desc = Pexp_fun("",None,pat,body)},_)}]
+      | PStr [
+        {pstr_desc = Pstr_eval({pexp_desc = Pexp_fun(arg_label,_,pat,body)},_)}]
+        when Ast_compatible.is_arg_label_simple arg_label
          -> 
          begin match pat.ppat_desc, body.pexp_desc with 
-         | Ppat_construct ({txt = Lident "()"}, None), Pexp_constant(Const_string(block,_))
+         | Ppat_construct ({txt = Lident "()"}, None), Pexp_constant(
+#if OCAML_VERSION =~ ">4.03.0" then
+          Pconst_string
+#else          
+           Const_string
+#end           
+           (block,_))
            -> 
-            Exp.apply ~loc 
-            (Exp.ident ~loc {txt = Ldot (Ast_literal.Lid.js_unsafe, Literals.raw_function);loc})
-            [ "", 
-              Exp.constant ~loc (Const_string (toString {args = [] ; block }, None))            
-            ]
-            
-         | Ppat_var ({txt;}), _ -> 
+            Ast_compatible.app1 ~loc 
+            (Exp.ident ~loc {txt = Ldot (Ast_literal.Lid.js_internal, Literals.raw_function);loc})            
+            (Ast_compatible.const_exp_string ~loc ( toString {args = [] ; block } ) )
+         | ppat_desc, _ -> 
+            let txt = 
+              match ppat_desc with 
+              | Ppat_var {txt} -> txt 
+              | Ppat_any -> "_"
+              | _ -> 
+                Location.raise_errorf ~loc "bs.raw can only be applied to a string or a special function form "
+            in 
             let acc, block = unroll_function_aux [txt] body in 
-            (Exp.apply ~loc 
-            (Exp.ident ~loc {txt = Ldot (Ast_literal.Lid.js_unsafe, Literals.raw_function);loc})
-            [ "", Exp.constant ~loc (Const_string (toString {args = List.rev acc ; block },None))]            
-            )
-         | _ -> Location.raise_errorf ~loc "bs.raw can only be applied to a string or a special function form "
+            Ast_compatible.app1 ~loc 
+              (Exp.ident ~loc {txt = Ldot (Ast_literal.Lid.js_internal, Literals.raw_function);loc})
+              (Ast_compatible.const_exp_string ~loc (toString {args = List.rev acc ; block }))
          end 
       | _ ->   Ast_util.handle_raw ~check_js_regex:false loc payload
       end
@@ -105,23 +134,23 @@ let handle_extension record_as_js_object e (self : Bs_ast_mapper.mapper)
                 file lnum in   
           let e = self.expr self e in 
           Exp.sequence ~loc
-            (Exp.apply ~loc     
+            (Ast_compatible.app1 ~loc     
                (Exp.ident ~loc {loc; 
                                 txt = 
                                   Ldot (Ldot (Lident "Js", "Console"), "timeStart")   
                                })
-               ["", Exp.constant ~loc (Const_string (locString,None))]
+               (Ast_compatible.const_exp_string ~loc locString)
             )     
             ( Exp.let_ ~loc Nonrecursive
                 [Vb.mk ~loc (Pat.var ~loc {loc; txt = "timed"}) e ;
                 ]
                 (Exp.sequence ~loc
-                   (Exp.apply ~loc     
+                   (Ast_compatible.app1 ~loc     
                       (Exp.ident ~loc {loc; 
                                        txt = 
                                          Ldot (Ldot (Lident "Js", "Console"), "timeEnd")   
                                       })
-                      ["", Exp.constant ~loc (Const_string (locString,None))]
+                      (Ast_compatible.const_exp_string ~loc locString)
                    )    
                    (Exp.ident ~loc {loc; txt = Lident "timed"})
                 )
@@ -141,19 +170,17 @@ let handle_extension record_as_js_object e (self : Bs_ast_mapper.mapper)
             else 
               let loc_start = loc.loc_start in 
               let (file, lnum, cnum) = Location.get_pos_info loc_start in
+              let file = Filename.basename file in 
               let enum = 
                 loc.Location.loc_end.Lexing.pos_cnum -
                 loc_start.Lexing.pos_cnum + cnum in
               Printf.sprintf "File %S, line %d, characters %d-%d"
                 file lnum cnum enum in   
           let raiseWithString  locString =      
-            (Exp.apply ~loc 
+              Ast_compatible.app1 ~loc 
                (Exp.ident ~loc {loc; txt = 
-                                       Ldot(Ldot (Lident "Js","Exn"),"raiseError")})
-               ["",
-
-                Exp.constant (Const_string (locString,None))    
-               ])
+                                       Ldot(Ldot (Lident "Js","Exn"),"raiseError")})               
+                (Ast_compatible.const_exp_string locString)               
           in 
           (match e.pexp_desc with
            | Pexp_construct({txt = Lident "false"},None) -> 
@@ -163,7 +190,13 @@ let handle_extension record_as_js_object e (self : Bs_ast_mapper.mapper)
                  (Exp.construct ~loc {txt = Lident "false";loc} None)
              else 
                (raiseWithString locString)
-           | Pexp_constant (Const_string (r, _)) -> 
+           | Pexp_constant (
+#if OCAML_VERSION =~ ">4.03.0" then 
+    Pconst_string
+#else    
+    Const_string
+#end              
+              (r, _)) -> 
              if !Clflags.noassert then 
                Exp.assert_ ~loc (Exp.construct ~loc {txt = Lident "true"; loc} None)
                (* Need special handling to make it type check*)
@@ -178,9 +211,9 @@ let handle_extension record_as_js_object e (self : Bs_ast_mapper.mapper)
                Exp.assert_ ~loc e
              else 
                Exp.ifthenelse ~loc
-                 (Exp.apply ~loc
+                 (Ast_compatible.app1 ~loc
                     (Exp.ident {loc ; txt = Ldot(Lident "Pervasives","not")})
-                    ["", e]
+                    e
                  )
                  (raiseWithString locString)
                  None

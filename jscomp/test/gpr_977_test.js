@@ -13,7 +13,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -54,7 +54,7 @@ eq("File \"gpr_977_test.ml\", line 33, characters 5-12", Int32.min_int, int32_f(
 
 eq("File \"gpr_977_test.ml\", line 34, characters 5-12", nint32_f(-2147483648), 2147483648);
 
-Mt.from_pair_suites("gpr_977_test.ml", suites[0]);
+Mt.from_pair_suites("Gpr_977_test", suites[0]);
 
 var min_32_int = -2147483648;
 

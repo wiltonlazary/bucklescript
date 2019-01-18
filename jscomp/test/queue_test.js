@@ -28,7 +28,7 @@ function queue_1(x) {
 
 var suites_000 = /* tuple */[
   "simple push",
-  (function () {
+  (function (param) {
       var x = /* array */[
         3,
         4,
@@ -47,7 +47,7 @@ var suites = /* :: */[
   /* [] */0
 ];
 
-Mt.from_pair_suites("queue_test.ml", suites);
+Mt.from_pair_suites("Queue_test", suites);
 
 exports.to_array = to_array;
 exports.queue_1 = queue_1;

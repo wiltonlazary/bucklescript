@@ -6,7 +6,7 @@ var Complex = require("../../lib/js/complex.js");
 
 var suites_000 = /* tuple */[
   "basic_add",
-  (function () {
+  (function (param) {
       return /* Eq */Block.__(0, [
                 /* record */[
                   /* re */2,
@@ -22,7 +22,7 @@ var suites = /* :: */[
   /* [] */0
 ];
 
-Mt.from_pair_suites("complex_test.ml", suites);
+Mt.from_pair_suites("Complex_test", suites);
 
 exports.suites = suites;
 /*  Not a pure module */

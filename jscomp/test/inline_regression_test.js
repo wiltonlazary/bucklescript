@@ -46,7 +46,7 @@ function basename(param) {
 
 var suites_000 = /* tuple */[
   "basename",
-  (function () {
+  (function (param) {
       return /* Eq */Block.__(0, [
                 basename("b/c/a.b"),
                 "a.b"
@@ -59,7 +59,7 @@ var suites = /* :: */[
   /* [] */0
 ];
 
-Mt.from_pair_suites("inline_regression_test.ml", suites);
+Mt.from_pair_suites("Inline_regression_test", suites);
 
 exports.generic_basename = generic_basename;
 exports.basename = basename;

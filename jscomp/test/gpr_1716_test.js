@@ -13,7 +13,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -39,7 +39,7 @@ function is_inifite(x) {
 
 eq("File \"gpr_1716_test.ml\", line 26, characters 6-13", true, is_inifite(a));
 
-Mt.from_pair_suites("gpr_1716_test.ml", suites[0]);
+Mt.from_pair_suites("Gpr_1716_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

@@ -119,27 +119,27 @@ var u1 = u.slice(0);
 
 var u2 = u.slice(0);
 
-console.time("bs_sort_test.ml 80");
+console.time("test/bs_sort_test.ml 80");
 
 Belt_SortArray.stableSortInPlaceBy(u, cmp);
 
-console.timeEnd("bs_sort_test.ml 80");
+console.timeEnd("test/bs_sort_test.ml 80");
 
 b("File \"bs_sort_test.ml\", line 81, characters 4-11", Belt_SortArray.isSorted(u, cmp));
 
-console.time("bs_sort_test.ml 82");
+console.time("test/bs_sort_test.ml 82");
 
 Belt_SortArrayInt.stableSortInPlace(u2);
 
-console.timeEnd("bs_sort_test.ml 82");
+console.timeEnd("test/bs_sort_test.ml 82");
 
 b("File \"bs_sort_test.ml\", line 83, characters 4-11", Belt_SortArray.isSorted(u2, cmp));
 
-console.time("bs_sort_test.ml 84");
+console.time("test/bs_sort_test.ml 84");
 
 Belt_SortArray.stableSortInPlaceBy(u1, cmp);
 
-console.timeEnd("bs_sort_test.ml 84");
+console.timeEnd("test/bs_sort_test.ml 84");
 
 b("File \"bs_sort_test.ml\", line 85, characters 4-11", Belt_SortArray.isSorted(u1, cmp));
 
@@ -405,7 +405,7 @@ eq("File \"bs_sort_test.ml\", line 143, characters 5-12", Belt_SortArray.strictl
           0
         ], lt), -5);
 
-Mt.from_pair_suites("bs_sort_test.ml", suites[0]);
+Mt.from_pair_suites("Bs_sort_test", suites[0]);
 
 var I = 0;
 

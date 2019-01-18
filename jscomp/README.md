@@ -23,7 +23,7 @@ You need to have [bucklescript-playground](https://github.com/BuckleScript/buckl
 opam switch 4.02.3+buckle-master
 eval `opam config env`
 opam install camlp4 ocp-ocamlres
-(cd vendor/ocaml && ./configure -prefix `pwd` && make world)
+(cd vendor/ocaml && ./configure -prefix `pwd` && make world.opt)
 (cd jscomp && BS_RELEASE_BUILD=true BS_PLAYGROUND=../../bucklescript-playground node repl.js)
 ```
 
@@ -44,3 +44,30 @@ so that we don't need bootstrap compiler, everytime we deliver a new feature.
 ## [test](./test)
 
 The directory containing unit-test files, some unit tests are copied from OCaml distribution(4.02)
+
+## compiler sourcetree
+
+    - ext (portable)
+    - common (portable)
+    - bsb 
+    - depends (portable)
+    - core 
+    - bspp
+    - outcome_printer
+    - stubs  
+    - super_errors  
+    - syntax 
+## tools (deprecatd code)    
+## xwatcher (dev tools)
+## runtime    
+## build_tests    
+## bin
+## cmd_tests
+## ounit
+## ounit_tests
+## others (belt/stdlib/node bindings)
+
+
+# bspack
+
+ocamlopt.opt -I +compiler-libs unix.cmxa ./stubs/ext_basic_hash_stubs.c stubs/bs_hash_stubs.cmx  ocamlcommon.cmxa ext.cmxa common.cmxa depends.cmxa core/bspack_main.cmx -o bspack.dev

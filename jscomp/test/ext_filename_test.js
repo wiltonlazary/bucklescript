@@ -6,15 +6,15 @@ var Block = require("../../lib/js/block.js");
 var Bytes = require("../../lib/js/bytes.js");
 var Curry = require("../../lib/js/curry.js");
 var Format = require("../../lib/js/format.js");
-var Js_exn = require("../../lib/js/js_exn.js");
 var $$String = require("../../lib/js/string.js");
 var Caml_sys = require("../../lib/js/caml_sys.js");
 var Filename = require("../../lib/js/filename.js");
+var Caml_bytes = require("../../lib/js/caml_bytes.js");
 var Pervasives = require("../../lib/js/pervasives.js");
-var Caml_string = require("../../lib/js/caml_string.js");
 var Test_literals = require("./test_literals.js");
 var Ext_string_test = require("./ext_string_test.js");
 var CamlinternalLazy = require("../../lib/js/camlinternalLazy.js");
+var Caml_js_exceptions = require("../../lib/js/caml_js_exceptions.js");
 var Ext_pervasives_test = require("./ext_pervasives_test.js");
 var Caml_missing_polyfill = require("../../lib/js/caml_missing_polyfill.js");
 var Caml_builtin_exceptions = require("../../lib/js/caml_builtin_exceptions.js");
@@ -25,7 +25,7 @@ var node_parent = "..";
 
 var node_current = ".";
 
-var cwd = Block.__(246, [(function () {
+var cwd = Block.__(246, [(function (param) {
         return Caml_sys.caml_sys_getcwd(/* () */0);
       })]);
 
@@ -74,7 +74,7 @@ function chop_extension($staropt$star, name) {
     return Filename.chop_extension(name);
   }
   catch (raw_exn){
-    var exn = Js_exn.internalToOCamlException(raw_exn);
+    var exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
     if (exn[0] === Caml_builtin_exceptions.invalid_argument) {
       return Curry._2(Format.ksprintf(Pervasives.invalid_arg, /* Format */[
                       /* String_literal */Block.__(11, [
@@ -106,7 +106,7 @@ function chop_extension_if_any(fname) {
     return Filename.chop_extension(fname);
   }
   catch (raw_exn){
-    var exn = Js_exn.internalToOCamlException(raw_exn);
+    var exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
     if (exn[0] === Caml_builtin_exceptions.invalid_argument) {
       return fname;
     } else {
@@ -135,7 +135,7 @@ function relative_path(file_or_dir_1, file_or_dir_2) {
         exit = 1;
       }
       if (exit === 1) {
-        return Pervasives.$at(List.map((function () {
+        return Pervasives.$at(List.map((function (param) {
                           return node_parent;
                         }), dir2), dir1);
       }
@@ -234,7 +234,7 @@ function find_package_json_dir(cwd) {
   return find_root_filename(cwd, Test_literals.bsconfig_json);
 }
 
-var package_dir = Block.__(246, [(function () {
+var package_dir = Block.__(246, [(function (param) {
         var tag = cwd.tag | 0;
         var cwd$1 = tag === 250 ? cwd[0] : (
             tag === 246 ? CamlinternalLazy.force_lazy_block(cwd) : cwd
@@ -244,12 +244,12 @@ var package_dir = Block.__(246, [(function () {
 
 function module_name_of_file(file) {
   var s = Filename.chop_extension(Curry._1(Filename.basename, file));
-  return Caml_string.bytes_to_string(Bytes.capitalize(Caml_string.bytes_of_string(s)));
+  return Caml_bytes.bytes_to_string(Bytes.capitalize(Caml_bytes.bytes_of_string(s)));
 }
 
 function module_name_of_file_if_any(file) {
   var s = chop_extension_if_any(Curry._1(Filename.basename, file));
-  return Caml_string.bytes_to_string(Bytes.capitalize(Caml_string.bytes_of_string(s)));
+  return Caml_bytes.bytes_to_string(Bytes.capitalize(Caml_bytes.bytes_of_string(s)));
 }
 
 function combine(p1, p2) {
@@ -313,13 +313,13 @@ function rel_normalized_absolute_path(from, to_) {
             _xss = xs;
             continue ;
           } else {
-            var start = List.fold_left((function (acc, _) {
+            var start = List.fold_left((function (acc, param) {
                     return Filename.concat(acc, Ext_string_test.parent_dir_lit);
                   }), Ext_string_test.parent_dir_lit, xs);
             return List.fold_left(Filename.concat, start, yss);
           }
         } else {
-          return List.fold_left((function (acc, _) {
+          return List.fold_left((function (acc, param) {
                         return Filename.concat(acc, Ext_string_test.parent_dir_lit);
                       }), Ext_string_test.parent_dir_lit, xs);
         }

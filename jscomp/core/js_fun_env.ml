@@ -57,7 +57,7 @@ type t = {
 }
 (** Invariant: unused param has to be immutable *)
 
-let empty ?immutable_mask n = { 
+let make ?immutable_mask n = { 
   unbounded =  Ident_set.empty ;
   used_mask = Array.make n false;
   immutable_mask = 
@@ -68,7 +68,8 @@ let empty ?immutable_mask n = {
   bound_loop_mutable_values =Ident_set.empty;
 }
 
-let is_tailcalled x = x.immutable_mask <> All_immutable_and_no_tail_call
+let is_tailcalled x = 
+  x.immutable_mask <> All_immutable_and_no_tail_call
 
 let mark_unused  t i = 
   t.used_mask.(i) <- true
@@ -80,15 +81,16 @@ let get_length t = Array.length t.used_mask
 
 let to_string env =  
   String.concat "," 
-    (Ext_list.map (fun (id : Ident.t) -> Printf.sprintf "%s/%d" id.name id.stamp)
-       (Ident_set.elements  env.unbounded ))
+    (Ext_list.map (Ident_set.elements  env.unbounded ) 
+      (fun id  -> Printf.sprintf "%s/%d" id.name id.stamp)
+       )
 
 let get_mutable_params (params : Ident.t list) (x : t ) = 
   match x.immutable_mask with 
   | All_immutable_and_no_tail_call -> []
   | Immutable_mask xs -> 
-      Ext_list.filter_mapi 
-        (fun i p -> if not xs.(i) then Some p else None)  params
+      Ext_list.filter_mapi params
+        (fun p i -> if not xs.(i) then Some p else None) 
 
 
 let get_unbounded t = t.unbounded

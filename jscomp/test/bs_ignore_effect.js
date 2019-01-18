@@ -12,7 +12,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -44,7 +44,7 @@ eq("File \"bs_ignore_effect.ml\", line 26, characters 5-12", v[0], 2);
 
 eq("File \"bs_ignore_effect.ml\", line 27, characters 5-12", z, 5.0);
 
-Mt.from_pair_suites("bs_ignore_effect.ml", suites[0]);
+Mt.from_pair_suites("Bs_ignore_effect", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

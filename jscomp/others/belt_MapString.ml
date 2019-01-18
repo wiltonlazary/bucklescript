@@ -1,8 +1,8 @@
-# 2 "map.cppo.ml"
+# 2 "others/map.cppo.ml"
 type key = string
 module I = Belt_internalMapString
 
-# 11 "map.cppo.ml"
+# 11 "others/map.cppo.ml"
 module N = Belt_internalAVLtree
 module A = Belt_Array 
 
@@ -133,15 +133,15 @@ let rec removeMany0 t xs i len  =
     | Some t -> removeMany0 t xs (i + 1) len
   else
     N.return t
-
-let findFirstByU = N.findFirstByU
-let findFirstBy = N.findFirstBy
-
+      
 let removeMany t keys =
   let len = A.length keys in
   match N.toOpt t with
   | None -> N.empty
   | Some t ->  removeMany0 t keys 0 len
+
+let findFirstByU = N.findFirstByU
+let findFirstBy = N.findFirstBy 
 
 let mergeMany h arr =   
   let len = A.length arr in 

@@ -25,7 +25,7 @@
 
 type dependency = 
   {
-    package_name : string ; 
+    package_name : Bsb_pkg_types.t ; 
     package_install_path : string ; 
   }
 type dependencies = dependency list 
@@ -48,6 +48,7 @@ type t =
     external_includes : string list ; 
     bsc_flags : string list ;
     ppx_flags : string list ;
+    pp_flags : string option;
     bs_dependencies : dependencies;
     bs_dev_dependencies : dependencies;
     built_in_dependency : dependency option; 
@@ -61,7 +62,7 @@ type t =
     js_post_build_cmd : string option;
     package_specs : Bsb_package_specs.t ; 
     globbed_dirs : string list;
-    bs_file_groups : Bsb_parse_sources.file_group list ;
+    bs_file_groups : Bsb_file_groups.file_groups;
     files_to_install : String_hash_set.t ;
     generate_merlin : bool ; 
     reason_react_jsx : reason_react_jsx ; (* whether apply PPX transform or not*)

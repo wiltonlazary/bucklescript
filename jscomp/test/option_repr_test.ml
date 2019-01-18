@@ -91,9 +91,12 @@ let f13 () =
 
 
 let () =   
-  b __LOC__ (None < Some Js.null);
-  b __LOC__ (None < Some Js.undefined)
-
+  b __LOC__ (None < Some Js.null); 
+  b __LOC__ (not (None > Some Js.null)); 
+  b __LOC__ ( ( Some Js.null > None)); 
+  b __LOC__ (None < Some Js.undefined);
+  b __LOC__ ( Some Js.undefined > None);
+  
 external log3 :
   req:([ `String of string
        | `Int of int
@@ -146,4 +149,4 @@ let all_true xs = Belt.List.every xs (fun x -> x)
     neqx (Some (Some (Some None))) (Some (Some None))
   ]
   
-;; Mt.from_pair_suites __FILE__ !suites
+;; Mt.from_pair_suites __MODULE__ !suites

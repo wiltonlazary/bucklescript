@@ -70,22 +70,23 @@ let reset () =
   record_as_js_object := false ;
   no_export  :=  false
 
+
 let rec unsafe_mapper : Bs_ast_mapper.mapper =
   { Bs_ast_mapper.default_mapper with
-    expr = (fun self ({ pexp_loc = loc } as e) ->
+    expr = (fun self e ->
         match e.pexp_desc with
         (** Its output should not be rewritten anymore *)
         | Pexp_extension extension ->
           Ast_exp_extension.handle_extension record_as_js_object e self extension
-        | Pexp_constant (Const_string (s, (Some delim)))
+        | Pexp_constant (
+#if OCAML_VERSION =~ ">4.03.0" then
+            Pconst_string
+#else            
+            Const_string 
+#end            
+            (s, (Some delim)))
           ->
-          if Ext_string.equal delim Literals.unescaped_js_delimiter then
-            let js_str = Ast_utf8_string.transform loc s in
-            { e with pexp_desc =
-                       Pexp_constant (Const_string (js_str, Some Literals.escaped_j_delimiter))}
-          else if Ext_string.equal delim Literals.unescaped_j_delimiter then
-            Ast_utf8_string_interp.transform_interp loc s
-          else e
+            Ast_utf8_string_interp.transform e s delim
         (** End rewriting *)
         | Pexp_function cases ->
           (* {[ function [@bs.exn]
@@ -98,9 +99,10 @@ let rec unsafe_mapper : Bs_ast_mapper.mapper =
             | `Nothing, _ ->
               Bs_ast_mapper.default_mapper.expr self  e
             | `Exn, pexp_attributes ->
-              Ast_util.convertBsErrorFunction loc self  pexp_attributes cases
+              Ast_util.convertBsErrorFunction e.pexp_loc self  pexp_attributes cases
           end
-        | Pexp_fun ("", None, pat , body)
+        | Pexp_fun (arg_label, _, pat , body)
+          when Ast_compatible.is_arg_label_simple arg_label
           ->
           begin match Ast_attributes.process_attributes_rev e.pexp_attributes with
             | Nothing, _
@@ -108,13 +110,13 @@ let rec unsafe_mapper : Bs_ast_mapper.mapper =
             | Uncurry _, pexp_attributes
               ->
               {e with
-               pexp_desc = Ast_util.to_uncurry_fn loc self pat body  ;
+               pexp_desc = Ast_util.to_uncurry_fn e.pexp_loc self pat body  ;
                pexp_attributes}
             | Method _ , _
-              ->  Location.raise_errorf ~loc "bs.meth is not supported in function expression"
+              ->  Location.raise_errorf ~loc:e.pexp_loc "bs.meth is not supported in function expression"
             | Meth_callback _, pexp_attributes
               ->
-              {e with pexp_desc = Ast_util.to_method_callback loc  self pat body ;
+              {e with pexp_desc = Ast_util.to_method_callback e.pexp_loc  self pat body ;
                       pexp_attributes }
           end
         | Pexp_apply (fn, args  ) ->
@@ -125,7 +127,7 @@ let rec unsafe_mapper : Bs_ast_mapper.mapper =
              | None ->
                { e with
                  pexp_desc =
-                   Ast_util.record_as_js_object loc self label_exprs;
+                   Ast_util.record_as_js_object e.pexp_loc self label_exprs;
                }
              | Some e ->
                Location.raise_errorf
@@ -146,7 +148,7 @@ let rec unsafe_mapper : Bs_ast_mapper.mapper =
               {e with
                pexp_desc =
                  Ast_util.ocaml_obj_as_js_object
-                   loc self pcstr_self pcstr_fields;
+                   e.pexp_loc self pcstr_self pcstr_fields;
                pexp_attributes
               }
             | `Nothing , _ ->
@@ -172,8 +174,10 @@ let rec unsafe_mapper : Bs_ast_mapper.mapper =
                     pcsig_fields = Ast_core_type_class_type.handle_class_type_fields self pcsig_fields
                   };
                 pcty_attributes
-               }
-
+               }               
+#if OCAML_VERSION =~ ">4.03.0" then 
+            | Pcty_open _ (* let open M in CT *)
+#end
              | Pcty_constr _
              | Pcty_extension _
              | Pcty_arrow _ ->
@@ -190,7 +194,11 @@ let rec unsafe_mapper : Bs_ast_mapper.mapper =
       (self : Bs_ast_mapper.mapper)
       (sigi : Parsetree.signature_item) ->
       match sigi.psig_desc with
-      | Psig_type (_ :: _ as tdcls) ->
+      | Psig_type (
+#if OCAML_VERSION =~ ">4.03.0" then        
+          _rf, 
+#end          
+           (_ :: _ as tdcls)) ->  (*FIXME: check recursive handling*)
           Ast_tdcls.handleTdclsInSigi self sigi tdcls
       | Psig_value prim
         when Ast_attributes.process_external prim.pval_attributes
@@ -200,7 +208,13 @@ let rec unsafe_mapper : Bs_ast_mapper.mapper =
     end;
     pat = begin fun self (pat : Parsetree.pattern) ->
       match pat with
-      | { ppat_desc = Ppat_constant(Const_string (_, Some "j")); ppat_loc = loc} ->
+      | { ppat_desc = Ppat_constant(
+#if OCAML_VERSION =~ ">4.03.0" then
+            Pconst_string
+#else            
+            Const_string 
+#end                    
+         (_, Some "j")); ppat_loc = loc} ->
         Location.raise_errorf ~loc  "Unicode string is not allowed in pattern match"
       | _  -> Bs_ast_mapper.default_mapper.pat self pat
 
@@ -215,12 +229,16 @@ let rec unsafe_mapper : Bs_ast_mapper.mapper =
           ->          
           if !Js_config.debug then 
             let open Ast_helper in 
-            Str.eval ~loc (Exp.apply ~loc 
+            Str.eval ~loc (Ast_compatible.app1 ~loc 
             (Exp.ident ~loc {txt = Ldot(Ldot (Lident"Belt","Debug"), "setupChromeDebugger");loc} )
-            ["", Ast_literal.val_unit ~loc ()]
+             (Ast_literal.val_unit ~loc ())
              )
           else Ast_structure.dummy_item loc
-        | Pstr_type (_ :: _ as tdcls ) (* [ {ptype_attributes} as tdcl ] *)->
+        | Pstr_type (
+#if OCAML_VERSION =~ ">4.03.0" then
+          _rf, 
+#end          
+          (_ :: _ as tdcls )) (* [ {ptype_attributes} as tdcl ] *)->
           Ast_tdcls.handleTdclsInStru self str tdcls
         | Pstr_primitive prim
           when Ast_attributes.process_external prim.pval_attributes
@@ -256,7 +274,6 @@ let signature_config_table :
   (Parsetree.expression option -> unit) String_map.t=
   String_map.of_list common_actions_table
 
-let dummy_unused_attribute : Warnings.t = (Bs_unused_attribute "")
 
 let rewrite_signature :
   (Parsetree.signature  -> Parsetree.signature) ref =
@@ -274,8 +291,7 @@ let rewrite_signature :
           unsafe_mapper.signature  unsafe_mapper x in
       reset ();
       (* Keep this check, since the check is not inexpensive*)
-      if Warnings.is_active dummy_unused_attribute then
-        Bs_ast_invariant.emit_external_warnings.signature Bs_ast_invariant.emit_external_warnings result ;
+      Bs_ast_invariant.emit_external_warnings_on_signature result;
       result
     )
 
@@ -286,8 +302,8 @@ let rewrite_implementation : (Parsetree.structure -> Parsetree.structure) ref =
         | {pstr_desc = Pstr_attribute ({txt = "bs.config"; loc}, payload); _} :: rest
           ->
           begin
-            Ast_payload.ident_or_record_as_config loc payload
-            |> List.iter (Ast_payload.table_dispatch structural_config_table) ;
+            Ext_list.iter (Ast_payload.ident_or_record_as_config loc payload)
+              (Ast_payload.table_dispatch structural_config_table) ;
             let rest = unsafe_mapper.structure unsafe_mapper rest in
             if !no_export then
               [Str.include_ ~loc
@@ -302,8 +318,7 @@ let rewrite_implementation : (Parsetree.structure -> Parsetree.structure) ref =
           unsafe_mapper.structure  unsafe_mapper x  in
       reset ();
       (* Keep this check since it is not inexpensive*)
-      (if Warnings.is_active dummy_unused_attribute then
-         Bs_ast_invariant.emit_external_warnings.structure Bs_ast_invariant.emit_external_warnings result);
+      Bs_ast_invariant.emit_external_warnings_on_structure result;
       result
     )
 

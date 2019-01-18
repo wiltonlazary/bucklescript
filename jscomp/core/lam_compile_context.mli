@@ -38,25 +38,6 @@
 
 type jbl_label = int 
 
-
-
-type value = {
-    exit_id : Ident.t ; 
-    args : Ident.t list ;
-    order_id : int
-  }
-
-type let_kind = Lam.let_kind
-
-type continuation = 
-  | EffectCall
-  | Declare of let_kind * J.ident (* bound value *)
-  | NeedValue 
-  | Assign of J.ident 
-  (** when use [Assign], var is not needed, since it's already declared 
-      make sure all [Assign] are declared first, otherwise you are creating global variables
-   *)
-
 type return_label = {
   id : Ident.t;
   label : J.label;
@@ -66,6 +47,16 @@ type return_label = {
   mutable triggered : bool
 }
 
+
+
+type value = {
+    exit_id : Ident.t ; 
+    bindings : Ident.t list ;
+    order_id : int
+  }
+
+type let_kind = Lam_compat.let_kind
+
 type return_type = 
   | ReturnFalse 
   | ReturnTrue of return_label option (* anonoymous function does not have identifier *)
@@ -74,21 +65,40 @@ type return_type =
       Invariant: [output] should return a trailing expression
   *)
 
+type continuation = 
+  | EffectCall of return_type
+  | NeedValue of return_type
+  | Declare of let_kind * J.ident (* bound value *)
+  | Assign of J.ident 
+  (** when use [Assign], var is not needed, since it's already declared 
+      make sure all [Assign] are declared first, otherwise you are creating global variables
+   *)
+
+
 
 type jmp_table 
 
+val continuation_is_return:
+  continuation -> 
+  bool 
 type t = {
-  st : continuation ;
-  should_return : return_type;
+  continuation : continuation ;
   jmp_table : jmp_table;
   meta : Lam_stats.t ;
 }
 
  val empty_handler_map : jmp_table  
 
+type handler = {
+  label : jbl_label ; 
+  handler : Lam.t;
+  bindings : Ident.t list; 
+} 
+
 val add_jmps :
+    jmp_table -> 
     Ident.t ->
-    (jbl_label * Lam.t * Ident.t list) list ->
-    jmp_table -> jmp_table * (jbl_label * Lam.t) list
+    handler list ->
+    jmp_table * (jbl_label * Lam.t) list
 
 val find_exn : jbl_label -> t -> value

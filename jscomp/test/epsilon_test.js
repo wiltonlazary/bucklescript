@@ -8,7 +8,7 @@ var v = (Number.EPSILON?Number.EPSILON:2.220446049250313e-16);
 
 var suites_000 = /* tuple */[
   "epsilon",
-  (function () {
+  (function (param) {
       return /* Eq */Block.__(0, [
                 Pervasives.epsilon_float,
                 v
@@ -19,7 +19,7 @@ var suites_000 = /* tuple */[
 var suites_001 = /* :: */[
   /* tuple */[
     "raw_epsilon",
-    (function () {
+    (function (param) {
         return /* Eq */Block.__(0, [
                   2.220446049250313e-16,
                   v
@@ -34,7 +34,7 @@ var suites = /* :: */[
   suites_001
 ];
 
-Mt.from_pair_suites("epsilon_test.ml", suites);
+Mt.from_pair_suites("Epsilon_test", suites);
 
 exports.v = v;
 exports.suites = suites;

@@ -1,6 +1,6 @@
 'use strict';
 
-var Js_primitive = require("../../lib/js/js_primitive.js");
+var Caml_option = require("../../lib/js/caml_option.js");
 
 var v = {
   "Content-Type": 3,
@@ -14,7 +14,7 @@ var b = v.l;
 
 var c = v.open;
 
-function ff() {
+function ff(param) {
   v["Content-Type"] = 3;
   v.l = 2;
   return /* () */0;
@@ -22,12 +22,12 @@ function ff() {
 
 var partial_arg = "x";
 
-function h0() {
+function h0(param) {
   var tmp = {
     hi: 2
   };
   if (partial_arg !== undefined) {
-    tmp["lo-x"] = Js_primitive.valFromOption(partial_arg);
+    tmp["lo-x"] = Caml_option.valFromOption(partial_arg);
   }
   return tmp;
 }
@@ -43,7 +43,7 @@ var h2 = {
 
 function hh(x) {
   x["lo-x"] = "3";
-  return Js_primitive.undefined_to_opt(x["lo-x"]);
+  return Caml_option.undefined_to_opt(x["lo-x"]);
 }
 
 function hh2(x) {

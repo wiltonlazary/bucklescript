@@ -61,8 +61,10 @@ let rec get_arity (meta : Lam_stats.t) (lam : Lam.t) :  Lam_arity.t =
   (* TODO: all information except Pccall is complete, we could 
      get more arity information
   *)
+  | Lprim {primitive = Praw_js_function(_, arg)} -> 
+    Lam_arity.info [List.length arg] false
   | Lprim {primitive = Praise ;  _} -> Lam_arity.raise_arity_info
-  | Lglobal_module _ (* TODO: fix me never going to happen assert false  *)
+  | Lglobal_module _ (* TODO: fix me never going to happen *)
   | Lprim _  -> Lam_arity.na (* CHECK*)
   (* shall we handle primitive in a direct way, 
       since we know all the information
@@ -111,13 +113,13 @@ let rec get_arity (meta : Lam_stats.t) (lam : Lam.t) :  Lam_arity.t =
                }) -> 
     all_lambdas meta (
       let rest = 
-        Ext_list.map_append snd sw_consts
-          (Ext_list.map snd sw_blocks) in
+        Ext_list.map_append sw_consts
+          (Ext_list.map sw_blocks snd) snd  in
       match sw_failaction with None -> rest | Some x -> x::rest )
   | Lstringswitch(l, sw, d) -> 
     begin match d with 
-      | None -> all_lambdas meta (Ext_list.map snd  sw )
-      | Some v -> all_lambdas meta (v:: Ext_list.map snd  sw)
+      | None -> all_lambdas meta (Ext_list.map sw snd )
+      | Some v -> all_lambdas meta (v:: Ext_list.map sw snd)
     end
   | Lstaticcatch(_, _, handler) -> get_arity meta handler
   | Ltrywith(l1, _, l2) -> 
@@ -127,7 +129,7 @@ let rec get_arity (meta : Lam_stats.t) (lam : Lam.t) :  Lam_arity.t =
   | Lsequence(_, l2) -> get_arity meta l2 
   | Lstaticraise _ (* since it will not be in tail position *)
   | Lsend _
-  | Lifused _ -> Lam_arity.na 
+     -> Lam_arity.na 
   | Lwhile _ 
   | Lfor _  
   | Lassign _ -> Lam_arity.non_function_arity_info

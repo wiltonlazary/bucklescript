@@ -54,9 +54,43 @@
 #include "edit_distance.h"
 #include "metrics.h"
 
+
+AnsiType GetAnsiType(){
+  static int initialized = -1;
+  if(initialized != -1){
+    return (AnsiType) initialized;
+  } else {
+    const char* tmp = getenv("NINJA_ANSI_FORCED");
+    if(tmp) {
+      if(strcmp(tmp,"0") == 0 || strcmp(tmp,"false") == 0){
+        initialized = COLOR_NO;      
+      } else {
+        initialized = COLOR_FORCE;
+      } 
+    } else {
+      initialized = COLOR_UNKOWN;
+    }
+    return (AnsiType) initialized;
+  }
+}
+
+bool ShouldBeColorFul(bool terminal){
+  switch(GetAnsiType()){
+    case COLOR_NO: return false;
+    case COLOR_FORCE: return true;
+    default: return terminal;
+  }
+}
+
+
 void Fatal(const char* msg, ...) {
   va_list ap;
-  fprintf(stderr, "ninja: fatal: ");
+  if (GetAnsiType()){
+    fprintf(stderr, "\x1b[31m" "ninja: fatal: " "\x1b[0m");
+  } else {
+    fprintf(stderr, "ninja: fatal: ");
+  }
+  
   va_start(ap, msg);
   vfprintf(stderr, msg, ap);
   va_end(ap);
@@ -74,7 +108,11 @@ void Fatal(const char* msg, ...) {
 
 void Warning(const char* msg, ...) {
   va_list ap;
-  fprintf(stderr, "ninja: warning: ");
+  if (GetAnsiType()){
+    fprintf(stderr, "\x1b[31m" "ninja: warning: " "\x1b[0m");
+  } else {
+    fprintf(stderr, "ninja: warning: ");
+  }
   va_start(ap, msg);
   vfprintf(stderr, msg, ap);
   va_end(ap);
@@ -83,7 +121,11 @@ void Warning(const char* msg, ...) {
 
 void Error(const char* msg, ...) {
   va_list ap;
-  fprintf(stderr, "ninja: error: ");
+  if (GetAnsiType()){
+    fprintf(stderr, "\x1b[31m" "ninja: error: " "\x1b[0m");
+  } else {
+    fprintf(stderr, "ninja: error: ");
+  }
   va_start(ap, msg);
   vfprintf(stderr, msg, ap);
   va_end(ap);
@@ -604,3 +646,4 @@ bool Truncate(const string& path, size_t size, string* err) {
   }
   return true;
 }
+

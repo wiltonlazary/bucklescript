@@ -17,7 +17,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -73,7 +73,7 @@ eq("File \"exception_repr_test.ml\", line 27, characters 7-14", "A", Printexc.to
           3
         ]));
 
-Mt.from_pair_suites("exception_repr_test.ml", suites[0]);
+Mt.from_pair_suites("Exception_repr_test", suites[0]);
 
 var AAA = Exception_def.A;
 

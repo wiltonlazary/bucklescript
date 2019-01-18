@@ -193,7 +193,7 @@ let assemble_args call_loc ffi  js_splice arg_types args : E.t list * E.t option
   args,
   begin  match eff with
     | [] -> None 
-    | x::xs ->  
+    | x::xs ->  (** FIXME: the order of effects? *)
       Some (E.fuse_to_seq x xs) 
   end
 
@@ -268,11 +268,11 @@ let translate_ffi
     (* TODO: fix in rest calling convention *)   
     add_eff eff        
       begin 
-        (match cxt.st with 
+        (match cxt.continuation with 
          | Declare (_, id) | Assign id  ->
            (* Format.fprintf Format.err_formatter "%a@."Ident.print  id; *)
            Ext_ident.make_js_object id 
-         | EffectCall | NeedValue -> ())
+         | EffectCall _ | NeedValue _ -> ())
         ;
         E.new_ fn args
       end            
@@ -294,11 +294,11 @@ let translate_ffi
     let fn =  translate_scoped_module_val module_name fn scopes in 
     add_eff eff 
       begin 
-        (match cxt.st with 
+        (match cxt.continuation with 
          | Declare (_, id) | Assign id  ->
            (* Format.fprintf Format.err_formatter "%a@."Ident.print  id; *)
            Ext_ident.make_js_object id 
-         | EffectCall | NeedValue -> ())
+         | EffectCall _ | NeedValue _ -> ())
         ;
         E.new_ fn args
       end            

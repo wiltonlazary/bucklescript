@@ -50,7 +50,12 @@ let after_parsing_sig ppf sourcefile outputprefix ast  =
       Lam_compile_env.reset () ;
       let initial_env = Compmisc.initial_env () in
       Env.set_unit_name modulename;
-      let tsg = Typemod.type_interface initial_env ast in
+
+      let tsg = Typemod.type_interface 
+#if OCAML_VERSION =~ ">4.03.0" then
+          sourcefile
+#end
+          initial_env ast in
       if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
       let sg = tsg.sig_type in
       if !Clflags.print_types then
@@ -61,12 +66,20 @@ let after_parsing_sig ppf sourcefile outputprefix ast  =
       Typecore.force_delayed_checks ();
       Warnings.check_fatal ();
       if not !Clflags.print_types then begin
-        let sg = Env.save_signature sg modulename (outputprefix ^ ".cmi") in
+#if OCAML_VERSION =~ ">4.03.0" then
+        let deprecated = Builtin_attributes.deprecated_of_sig ast in
+        let sg =
+          Env.save_signature ~deprecated sg modulename (outputprefix ^ ".cmi")
+        in
+#else
+        let sg = Env.save_signature ?check_exists:(if !Js_config.force_cmi then None else Some ()) sg modulename (outputprefix ^ ".cmi") in
+#end        
         Typemod.save_signature modulename tsg outputprefix sourcefile
           initial_env sg ;
       end
     end
 let interface ppf sourcefile outputprefix =
+  Js_config.set_current_file sourcefile ; 
   Compmisc.init_path false;
   Ocaml_parse.parse_interface ppf sourcefile
   |> print_if ppf Clflags.dump_parsetree Printast.interface
@@ -74,6 +87,7 @@ let interface ppf sourcefile outputprefix =
   |> after_parsing_sig ppf sourcefile outputprefix 
 
 let interface_mliast ppf sourcefile outputprefix  = 
+  Js_config.set_current_file sourcefile ; 
   Compmisc.init_path false;
   Binary_ast.read_ast Mli sourcefile 
   |> print_if ppf Clflags.dump_parsetree Printast.interface
@@ -81,6 +95,7 @@ let interface_mliast ppf sourcefile outputprefix  =
   |> after_parsing_sig ppf sourcefile outputprefix 
 
 let after_parsing_impl ppf sourcefile outputprefix ast =
+  
   if !Js_config.binary_ast then
     Binary_ast.write_ast ~fname:sourcefile 
       Ml ~output:(outputprefix ^ Literals.suffix_mlast)
@@ -99,7 +114,7 @@ let after_parsing_impl ppf sourcefile outputprefix ast =
       try
         let (typedtree, coercion, finalenv, current_signature) =
           ast 
-          |> Typemod.type_implementation_more sourcefile outputprefix modulename env 
+          |> Typemod.type_implementation_more ?check_exists:(if !Js_config.force_cmi then None else Some ()) sourcefile outputprefix modulename env 
           |> print_if ppf Clflags.dump_typedtree
             (fun fmt (ty,co,_,_) -> Printtyped.implementation_with_coercion fmt  (ty,co))
         in
@@ -108,8 +123,15 @@ let after_parsing_impl ppf sourcefile outputprefix ast =
         end else begin
           (typedtree, coercion)
           |> Translmod.transl_implementation modulename
-          |> print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-          |> (fun lambda -> 
+
+          |> (fun 
+#if OCAML_VERSION =~ ">4.03.0" then
+              {code = lambda}
+#else
+              lambda
+#end              
+               -> 
+              ignore (print_if ppf Clflags.dump_rawlambda Printlambda.lambda lambda);
               try
                 Lam_compile_main.lambda_as_module
                   finalenv current_signature 
@@ -137,6 +159,7 @@ let after_parsing_impl ppf sourcefile outputprefix ast =
     end
 let implementation ppf sourcefile outputprefix =
   Compmisc.init_path false;
+  Js_config.set_current_file sourcefile ; 
   Ocaml_parse.parse_implementation ppf sourcefile
   |> print_if ppf Clflags.dump_parsetree Printast.implementation
   |> print_if ppf Clflags.dump_source Pprintast.structure
@@ -144,6 +167,7 @@ let implementation ppf sourcefile outputprefix =
 
 let implementation_mlast ppf sourcefile outputprefix = 
   Compmisc.init_path false;
+  Js_config.set_current_file sourcefile ; 
   Binary_ast.read_ast Ml sourcefile
   |> print_if ppf Clflags.dump_parsetree Printast.implementation
   |> print_if ppf Clflags.dump_source Pprintast.structure
@@ -173,10 +197,10 @@ let implementation_map ppf sourcefile outputprefix =
   let ns = 
     Ext_string.capitalize_ascii
       (Filename.chop_extension (Filename.basename sourcefile)) in
-  let ml_ast = List.fold_left (fun acc module_name -> 
+  let ml_ast = Ext_list.fold_left list_of_modules [] (fun module_name acc -> 
       if Ext_string.is_empty module_name then acc 
       else make_structure_item ~ns module_name :: acc 
-    ) [] list_of_modules in 
+    )  in 
   Compmisc.init_path false;
   ml_ast
   |> print_if ppf Clflags.dump_parsetree Printast.implementation

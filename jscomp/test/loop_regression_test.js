@@ -3,7 +3,7 @@
 var Mt = require("./mt.js");
 var Block = require("../../lib/js/block.js");
 
-function f() {
+function f(param) {
   var v = /* record */[/* contents */0];
   var acc = /* record */[/* contents */0];
   var n = 10;
@@ -20,7 +20,7 @@ function f() {
 
 var suites_000 = /* tuple */[
   "sum",
-  (function () {
+  (function (param) {
       return /* Eq */Block.__(0, [
                 55,
                 f(/* () */0)
@@ -33,7 +33,7 @@ var suites = /* :: */[
   /* [] */0
 ];
 
-Mt.from_pair_suites("loop_regression_test.ml", suites);
+Mt.from_pair_suites("Loop_regression_test", suites);
 
 exports.f = f;
 exports.suites = suites;

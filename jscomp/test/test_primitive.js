@@ -53,7 +53,7 @@ function u(b) {
   }
 }
 
-function f2(h, b, _) {
+function f2(h, b, param) {
   return Curry._1(h, b ? 32 : 7);
 }
 
@@ -96,7 +96,7 @@ function fib(n) {
 
 var a0 = "File \"test_primitive.ml\", line 26, characters 9-16";
 
-var a1 = "test_primitive.ml";
+var a1 = "Test_primitive";
 
 var a2 = 28;
 
@@ -127,4 +127,4 @@ exports.gg = gg;
 exports.f = f;
 exports.is_lazy_force = is_lazy_force;
 exports.fib = fib;
-/*  Not a pure module */
+/* test_abs Not a pure module */

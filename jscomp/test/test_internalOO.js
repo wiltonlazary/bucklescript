@@ -9,8 +9,8 @@ var Caml_oo = require("../../lib/js/caml_oo.js");
 var Caml_obj = require("../../lib/js/caml_obj.js");
 var Caml_array = require("../../lib/js/caml_array.js");
 var Caml_int32 = require("../../lib/js/caml_int32.js");
+var Caml_option = require("../../lib/js/caml_option.js");
 var Caml_string = require("../../lib/js/caml_string.js");
-var Js_primitive = require("../../lib/js/js_primitive.js");
 var Caml_primitive = require("../../lib/js/caml_primitive.js");
 var Caml_exceptions = require("../../lib/js/caml_exceptions.js");
 var Caml_builtin_exceptions = require("../../lib/js/caml_builtin_exceptions.js");
@@ -435,7 +435,7 @@ function concat(t1, t2) {
 
 function concat_or_join(t1, v, d, t2) {
   if (d !== undefined) {
-    return join(t1, v, Js_primitive.valFromOption(d), t2);
+    return join(t1, v, Caml_option.valFromOption(d), t2);
   } else {
     return concat(t1, t2);
   }
@@ -451,7 +451,7 @@ function split(x, param) {
     if (c === 0) {
       return /* tuple */[
               l,
-              Js_primitive.some(d),
+              Caml_option.some(d),
               r
             ];
     } else if (c < 0) {
@@ -484,7 +484,7 @@ function merge(f, s1, s2) {
     var v1 = s1[1];
     if (s1[4] >= height(s2)) {
       var match = split(v1, s2);
-      return concat_or_join(merge(f, s1[0], match[0]), v1, Curry._3(f, v1, Js_primitive.some(s1[2]), match[1]), merge(f, s1[3], match[2]));
+      return concat_or_join(merge(f, s1[0], match[0]), v1, Curry._3(f, v1, Caml_option.some(s1[2]), match[1]), merge(f, s1[3], match[2]));
     } else {
       exit = 1;
     }
@@ -497,7 +497,7 @@ function merge(f, s1, s2) {
     if (s2) {
       var v2 = s2[1];
       var match$1 = split(v2, s1);
-      return concat_or_join(merge(f, match$1[0], s2[0]), v2, Curry._3(f, v2, match$1[1], Js_primitive.some(s2[2])), merge(f, match$1[2], s2[3]));
+      return concat_or_join(merge(f, match$1[0], s2[0]), v2, Curry._3(f, v2, match$1[1], Caml_option.some(s2[2])), merge(f, match$1[2], s2[3]));
     } else {
       throw [
             Caml_builtin_exceptions.assert_failure,
@@ -1084,7 +1084,7 @@ function concat$1(t1, t2) {
 
 function concat_or_join$1(t1, v, d, t2) {
   if (d !== undefined) {
-    return join$1(t1, v, Js_primitive.valFromOption(d), t2);
+    return join$1(t1, v, Caml_option.valFromOption(d), t2);
   } else {
     return concat$1(t1, t2);
   }
@@ -1100,7 +1100,7 @@ function split$1(x, param) {
     if (c === 0) {
       return /* tuple */[
               l,
-              Js_primitive.some(d),
+              Caml_option.some(d),
               r
             ];
     } else if (c < 0) {
@@ -1133,7 +1133,7 @@ function merge$1(f, s1, s2) {
     var v1 = s1[1];
     if (s1[4] >= height$1(s2)) {
       var match = split$1(v1, s2);
-      return concat_or_join$1(merge$1(f, s1[0], match[0]), v1, Curry._3(f, v1, Js_primitive.some(s1[2]), match[1]), merge$1(f, s1[3], match[2]));
+      return concat_or_join$1(merge$1(f, s1[0], match[0]), v1, Curry._3(f, v1, Caml_option.some(s1[2]), match[1]), merge$1(f, s1[3], match[2]));
     } else {
       exit = 1;
     }
@@ -1146,7 +1146,7 @@ function merge$1(f, s1, s2) {
     if (s2) {
       var v2 = s2[1];
       var match$1 = split$1(v2, s1);
-      return concat_or_join$1(merge$1(f, match$1[0], s2[0]), v2, Curry._3(f, v2, match$1[1], Js_primitive.some(s2[2])), merge$1(f, match$1[2], s2[3]));
+      return concat_or_join$1(merge$1(f, match$1[0], s2[0]), v2, Curry._3(f, v2, match$1[1], Caml_option.some(s2[2])), merge$1(f, match$1[2], s2[3]));
     } else {
       throw [
             Caml_builtin_exceptions.assert_failure,
@@ -1733,7 +1733,7 @@ function concat$2(t1, t2) {
 
 function concat_or_join$2(t1, v, d, t2) {
   if (d !== undefined) {
-    return join$2(t1, v, Js_primitive.valFromOption(d), t2);
+    return join$2(t1, v, Caml_option.valFromOption(d), t2);
   } else {
     return concat$2(t1, t2);
   }
@@ -1749,7 +1749,7 @@ function split$2(x, param) {
     if (c === 0) {
       return /* tuple */[
               l,
-              Js_primitive.some(d),
+              Caml_option.some(d),
               r
             ];
     } else if (c < 0) {
@@ -1782,7 +1782,7 @@ function merge$2(f, s1, s2) {
     var v1 = s1[1];
     if (s1[4] >= height$2(s2)) {
       var match = split$2(v1, s2);
-      return concat_or_join$2(merge$2(f, s1[0], match[0]), v1, Curry._3(f, v1, Js_primitive.some(s1[2]), match[1]), merge$2(f, s1[3], match[2]));
+      return concat_or_join$2(merge$2(f, s1[0], match[0]), v1, Curry._3(f, v1, Caml_option.some(s1[2]), match[1]), merge$2(f, s1[3], match[2]));
     } else {
       exit = 1;
     }
@@ -1795,7 +1795,7 @@ function merge$2(f, s1, s2) {
     if (s2) {
       var v2 = s2[1];
       var match$1 = split$2(v2, s1);
-      return concat_or_join$2(merge$2(f, match$1[0], s2[0]), v2, Curry._3(f, v2, match$1[1], Js_primitive.some(s2[2])), merge$2(f, match$1[2], s2[3]));
+      return concat_or_join$2(merge$2(f, match$1[0], s2[0]), v2, Curry._3(f, v2, match$1[1], Caml_option.some(s2[2])), merge$2(f, match$1[2], s2[3]));
     } else {
       throw [
             Caml_builtin_exceptions.assert_failure,
@@ -2351,7 +2351,7 @@ function make_class_store(pub_meths, class_init, init_table) {
 }
 
 function dummy_class(loc) {
-  var undef = function () {
+  var undef = function (param) {
     throw [
           Caml_builtin_exceptions.undefined_recursive_module,
           loc
@@ -2478,7 +2478,7 @@ function lookup_tables(root, keys) {
 }
 
 function get_const(x) {
-  return (function () {
+  return (function (obj) {
       return x;
     });
 }
@@ -2509,7 +2509,7 @@ function set_var(n) {
 }
 
 function app_const(f, x) {
-  return (function () {
+  return (function (obj) {
       return Curry._1(f, x);
     });
 }
@@ -2533,7 +2533,7 @@ function app_meth(f, n) {
 }
 
 function app_const_const(f, x, y) {
-  return (function () {
+  return (function (obj) {
       return Curry._2(f, x, y);
     });
 }
@@ -2598,27 +2598,27 @@ function meth_app_meth(n, m) {
     });
 }
 
-function send_const(m, x, _) {
-  return (function () {
+function send_const(m, x, c) {
+  return (function (obj) {
       return Curry._1(Curry._3(Caml_oo.caml_get_public_method, x, m, 1), x);
     });
 }
 
-function send_var(m, n, _) {
+function send_var(m, n, c) {
   return (function (obj) {
       var tmp = obj[n];
       return Curry._1(Curry._3(Caml_oo.caml_get_public_method, tmp, m, 2), tmp);
     });
 }
 
-function send_env(m, e, n, _) {
+function send_env(m, e, n, c) {
   return (function (obj) {
       var tmp = obj[e][n];
       return Curry._1(Curry._3(Caml_oo.caml_get_public_method, tmp, m, 3), tmp);
     });
 }
 
-function send_meth(m, n, _) {
+function send_meth(m, n, c) {
   return (function (obj) {
       var tmp = Curry._1(obj[0][n], obj);
       return Curry._1(Curry._3(Caml_oo.caml_get_public_method, tmp, m, 4), tmp);
@@ -2633,7 +2633,7 @@ function new_cache(table) {
 }
 
 function method_impl(table, i, arr) {
-  var next = function () {
+  var next = function (param) {
     i[0] = i[0] + 1 | 0;
     return Caml_array.caml_array_get(arr, i[0]);
   };
@@ -2642,7 +2642,7 @@ function method_impl(table, i, arr) {
     switch (clo) {
       case 0 : 
           var x = next(/* () */0);
-          return (function () {
+          return (function (obj) {
               return x;
             });
       case 1 : 
@@ -2665,7 +2665,7 @@ function method_impl(table, i, arr) {
       case 5 : 
           var f = next(/* () */0);
           var x$1 = next(/* () */0);
-          return (function () {
+          return (function (obj) {
               return Curry._1(f, x$1);
             });
       case 6 : 
@@ -2687,7 +2687,7 @@ function method_impl(table, i, arr) {
           var f$4 = next(/* () */0);
           var x$2 = next(/* () */0);
           var y = next(/* () */0);
-          return (function () {
+          return (function (obj) {
               return Curry._2(f$4, x$2, y);
             });
       case 10 : 
@@ -2775,7 +2775,7 @@ function set_methods(table, methods) {
   return /* () */0;
 }
 
-function stats() {
+function stats(param) {
   return /* record */[
           /* classes */table_count[0],
           /* methods */method_count[0],

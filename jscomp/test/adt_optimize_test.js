@@ -22,7 +22,7 @@ function f3(param) {
   return param;
 }
 
-function f4() {
+function f4(param) {
   return 3;
 }
 
@@ -160,7 +160,7 @@ function f11(x) {
           Caml_builtin_exceptions.assert_failure,
           /* tuple */[
             "adt_optimize_test.ml",
-            155,
+            191,
             9
           ]
         ];

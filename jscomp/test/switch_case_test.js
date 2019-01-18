@@ -12,7 +12,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -47,7 +47,7 @@ eq("File \"switch_case_test.ml\", line 21, characters 7-14", f("xx\\\""), 2);
 
 eq("File \"switch_case_test.ml\", line 22, characters 7-14", f("xx\\\"\""), 3);
 
-Mt.from_pair_suites("switch_case_test.ml", suites[0]);
+Mt.from_pair_suites("Switch_case_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

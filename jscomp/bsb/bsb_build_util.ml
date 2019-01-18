@@ -22,12 +22,22 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. *)
 
-let flag_concat flag xs = 
-  xs 
-  |> Ext_list.flat_map (fun x -> [flag ; x])
-  |> String.concat Ext_string.single_space
+let flag_concat flag xs =   
+  String.concat Ext_string.single_space
+    (Ext_list.flat_map xs  (fun x -> [flag ; x]))
+  
 let (//) = Ext_path.combine
 
+
+(*TODO: optimize *)
+let ppx_flags xs =
+  flag_concat "-ppx"
+    (Ext_list.map xs Filename.quote)
+
+let pp_flag (xs : string) = 
+   "-pp " ^ Filename.quote xs
+
+let include_dirs = flag_concat "-I"
 
 
 (* we use lazy $src_root_dir *)
@@ -58,20 +68,19 @@ let convert_and_resolve_path : string -> string -> string =
    Input is node path, output is OS dependent (normalized) path
 *)
 let resolve_bsb_magic_file ~cwd ~desc p =
-  let p_len = String.length p in
   let no_slash = Ext_string.no_slash_idx p in
   if no_slash < 0 then
-    p
+    p (*FIXME: better error message for "" input *)
   else 
-  if Filename.is_relative p &&
-     p_len > 0 &&
-     String.unsafe_get p 0 <> '.' then
-    let package_name, relative_path = 
-      String.sub p 0 no_slash , 
-      let p = String.sub p (no_slash + 1) (p_len - no_slash - 1 )in  
-      if Ext_sys.is_windows_or_cygwin then Ext_string.replace_slash_backward p 
-      else p
+  let first_char = String.unsafe_get p 0 in 
+  if Filename.is_relative p &&  
+     first_char  <> '.' then
+    let package_name, rest = 
+      Bsb_pkg_types.extract_pkg_name_and_file p 
     in 
+    let relative_path = 
+        if Ext_sys.is_windows_or_cygwin then Ext_string.replace_slash_backward rest 
+        else rest in       
     (* let p = if Ext_sys.is_windows_or_cygwin then Ext_string.replace_slash_backward p else p in *)
     let package_dir = Bsb_pkg.resolve_bs_package ~cwd package_name in
     let path = package_dir // relative_path in 
@@ -91,25 +100,23 @@ let resolve_bsb_magic_file ~cwd ~desc p =
 (** converting a file from Linux path format to Windows *)
 
 (**
-   if [Sys.executable_name] gives an absolute path, 
-   nothing needs to be done
-   if it is a relative path 
-
-   there are two cases: 
-   - bsb.exe
-   - ./bsb.exe 
-   The first should also not be touched
-   Only the latter need be adapted based on project root  
+   If [Sys.executable_name] gives an absolute path, 
+   nothing needs to be done.
+   
+   If [Sys.executable_name] is not an absolute path, for example
+   (rlwrap ./ocaml)
+   it is a relative path, 
+   it needs be adapted based on cwd
 *)
 
-let get_bsc_dir cwd = 
+let get_bsc_dir ~cwd = 
   Filename.dirname 
     (Ext_path.normalize_absolute_path 
        (Ext_path.combine cwd  Sys.executable_name))
 
 
 let get_bsc_bsdep cwd = 
-  let dir = get_bsc_dir cwd in    
+  let dir = get_bsc_dir ~cwd in    
   Filename.concat dir  "bsc.exe", 
   Filename.concat dir  "bsb_helper.exe"
 
@@ -165,7 +172,7 @@ type package_context = {
 *)
 
 let pp_packages_rev ppf lst = 
-  Ext_list.rev_iter (fun  s ->  Format.fprintf ppf "%s " s) lst
+  Ext_list.rev_iter lst (fun  s ->  Format.fprintf ppf "%s " s) 
 
 let rec walk_all_deps_aux visited paths top dir cb =
   let bsconfig_json =  (dir // Literals.bsconfig_json) in
@@ -195,13 +202,13 @@ let rec walk_all_deps_aux visited paths top dir cb =
         map
         |?
         (Bsb_build_schemas.bs_dependencies,
-         `Arr (fun (new_packages : Ext_json_types.t array) ->
-             new_packages
-             |> Array.iter (fun (js : Ext_json_types.t) ->
+         `Arr (fun (new_packages : Ext_json_types.t array) ->             
+             Ext_array.iter new_packages(fun js ->
                  begin match js with
                    | Str {str = new_package} ->
                      let package_dir = 
-                       Bsb_pkg.resolve_bs_package ~cwd:dir new_package in 
+                       Bsb_pkg.resolve_bs_package ~cwd:dir 
+                        (Bsb_pkg_types.string_as_package   new_package) in 
                      walk_all_deps_aux visited package_stacks  false package_dir cb  ;
                    | _ -> 
                      Bsb_exception.errorf ~loc 
@@ -214,13 +221,13 @@ let rec walk_all_deps_aux visited paths top dir cb =
           map
           |?
           (Bsb_build_schemas.bs_dev_dependencies,
-           `Arr (fun (new_packages : Ext_json_types.t array) ->
-               new_packages
-               |> Array.iter (fun (js : Ext_json_types.t) ->
+           `Arr (fun (new_packages : Ext_json_types.t array) ->               
+               Ext_array.iter new_packages (fun (js : Ext_json_types.t) ->
                    match js with
                    | Str {str = new_package} ->
                      let package_dir = 
-                       Bsb_pkg.resolve_bs_package ~cwd:dir new_package in 
+                       Bsb_pkg.resolve_bs_package ~cwd:dir 
+                        (Bsb_pkg_types.string_as_package new_package) in 
                      walk_all_deps_aux visited package_stacks  false package_dir cb  ;
                    | _ -> 
                      Bsb_exception.errorf ~loc 

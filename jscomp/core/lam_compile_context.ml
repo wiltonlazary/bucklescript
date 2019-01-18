@@ -30,7 +30,7 @@ type jbl_label = int
 module HandlerMap = Int_map
 type value = {
   exit_id : Ident.t ;
-  args : Ident.t list ;
+  bindings : Ident.t list ;
   order_id : int
 }
 
@@ -58,39 +58,54 @@ type return_type =
 (* have a mutable field to notifiy it's actually triggered *)
 (* anonoymous function does not have identifier *)
 
-type let_kind = Lam.let_kind
+type let_kind = Lam_compat.let_kind
 
 type continuation = 
-  | EffectCall
+  | EffectCall of return_type
+  | NeedValue of return_type
   | Declare of let_kind * J.ident (* bound value *)
-  | NeedValue 
   | Assign of J.ident (* when use [Assign], var is not needed, since it's already declared  *)
 
 type jmp_table =   value  HandlerMap.t
 
+let continuation_is_return ( x : continuation) =  
+  match x with 
+  | EffectCall (ReturnTrue _) | NeedValue (ReturnTrue _) 
+    -> true 
+  | EffectCall ReturnFalse | NeedValue ReturnFalse 
+  | Declare _ | Assign _
+    -> false
+    
 type t = {
-  st : continuation ;
-  should_return : return_type;
+  continuation : continuation ;
   jmp_table : jmp_table;
   meta : Lam_stats.t ;
 }
 
 let empty_handler_map = HandlerMap.empty
 
-
+type handler = {
+  label : jbl_label ; 
+  handler : Lam.t;
+  bindings : Ident.t list; 
+}
 
 (* always keep key id positive, specifically no [0] generated *)
 let add_jmps 
+    (m  : jmp_table)
     exit_id code_table
-    m = 
+    = 
   let map, handlers = 
-    Ext_list.fold_left_with_offset
-      (fun order_id (acc,handlers)
-        (l,lam,args)
+    Ext_list.fold_left_with_offset 
+      code_table (m,[]) 
+      (HandlerMap.cardinal m + 1 ) 
+      (fun { label; handler; bindings}
+        (acc,handlers)        
+        order_id 
         ->     
-          HandlerMap.add l {exit_id;args; order_id } acc, 
-          (order_id,lam)::handlers
-      ) (HandlerMap.cardinal m + 1 )  (m,[]) code_table in 
+          HandlerMap.add label {exit_id; bindings; order_id } acc, 
+          (order_id,handler)::handlers
+      )   in 
   map, List.rev handlers
 
 

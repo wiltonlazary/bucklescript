@@ -5,12 +5,12 @@ import * as Path from "path";
 import * as Process from "process";
 import * as Js_option from "../../lib/es6/js_option.js";
 import * as Js_vector from "../../lib/es6/js_vector.js";
-import * as Js_primitive from "../../lib/es6/js_primitive.js";
+import * as Caml_option from "../../lib/es6/caml_option.js";
 import * as Node_process from "../../lib/es6/node_process.js";
 import * as Xwatcher_util from "./xwatcher_util.js";
 import * as Child_process from "child_process";
 
-Js_option.getExn(Js_primitive.undefined_to_opt(typeof (__dirname) === "undefined" ? undefined : (__dirname)));
+Js_option.getExn(Caml_option.undefined_to_opt(typeof __dirname === "undefined" ? undefined : __dirname));
 
 var cwd = Process.cwd();
 
@@ -28,14 +28,14 @@ var events = Xwatcher_util.makeEventObj(/* () */0);
 
 var command = "./watch-build.sh";
 
-function exec() {
+function exec(param) {
   return Xwatcher_util.buildWithShell(command, events, lock, (function () {
                 return /* () */0;
               }));
 }
 
 function watch(dir) {
-  return Xwatcher_util.makeWatcher(dir, (function (_, fileName) {
+  return Xwatcher_util.makeWatcher(dir, (function (_event, fileName) {
                 if (fileName.endsWith(".ml") || fileName.endsWith(".mli") || fileName.endsWith(".cppo") || fileName.endsWith(".js") || fileName === "Makefile" || fileName === "Makefile.shared") {
                   return exec(/* () */0);
                 } else {
@@ -79,7 +79,9 @@ if (exit === 1) {
         "bsb",
         "common",
         "super_errors",
-        "."
+        ".",
+        "stubs",
+        "stdlib-406"
       ]);
   exec(/* () */0);
 }

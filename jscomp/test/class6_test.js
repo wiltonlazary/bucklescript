@@ -27,7 +27,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -40,6 +40,7 @@ function eq(loc, x, y) {
 }
 
 function point_init($$class) {
+  var x_init = CamlinternalOO.new_variable($$class, "");
   var ids = CamlinternalOO.new_methods_variables($$class, shared, shared$2);
   var move = ids[0];
   var get_x = ids[1];
@@ -55,9 +56,10 @@ function point_init($$class) {
             return /* () */0;
           })
       ]);
-  return (function (_, self, x_init) {
+  return (function (env, self, x_init$1) {
       var self$1 = CamlinternalOO.create_object_opt(self, $$class);
-      self$1[x] = x_init;
+      self$1[x_init] = x_init$1;
+      self$1[x] = x_init$1;
       return self$1;
     });
 }
@@ -65,21 +67,25 @@ function point_init($$class) {
 var point = CamlinternalOO.make_class(shared, point_init);
 
 function colored_point_init($$class) {
+  var x = CamlinternalOO.new_variable($$class, "");
+  var c = CamlinternalOO.new_variable($$class, "");
   var ids = CamlinternalOO.new_methods_variables($$class, ["color"], ["c"]);
   var color = ids[0];
-  var c = ids[1];
+  var c$1 = ids[1];
   var inh = CamlinternalOO.inherits($$class, shared$2, 0, [
         "get_x",
         "move"
       ], point, 1);
   var obj_init = inh[0];
   CamlinternalOO.set_method($$class, color, (function (self$2) {
-          return self$2[c];
+          return self$2[c$1];
         }));
-  return (function (_, self, x, c$1) {
+  return (function (env, self, x$1, c$2) {
       var self$1 = CamlinternalOO.create_object_opt(self, $$class);
-      Curry._2(obj_init, self$1, x);
-      self$1[c] = c$1;
+      self$1[c] = c$2;
+      self$1[x] = x$1;
+      Curry._2(obj_init, self$1, x$1);
+      self$1[c$1] = c$2;
       return CamlinternalOO.run_initializers_opt(self, self$1, $$class);
     });
 }
@@ -117,10 +123,10 @@ function lookup_obj(obj, _param) {
 
 function c_init($$class) {
   var m = CamlinternalOO.get_method_label($$class, "m");
-  CamlinternalOO.set_method($$class, m, (function () {
+  CamlinternalOO.set_method($$class, m, (function (self$3) {
           return 1;
         }));
-  return (function (_, self) {
+  return (function (env, self) {
       return CamlinternalOO.create_object_opt(self, $$class);
     });
 }
@@ -138,7 +144,7 @@ function d_init($$class) {
   var obj_init = inh[0];
   CamlinternalOO.set_methods($$class, /* array */[
         n,
-        (function () {
+        (function (self$4) {
             return 2;
           }),
         as_c,
@@ -146,7 +152,7 @@ function d_init($$class) {
             return self$4;
           })
       ]);
-  return (function (_, self) {
+  return (function (env, self) {
       var self$1 = CamlinternalOO.create_object_opt(self, $$class);
       Curry._1(obj_init, self$1);
       return CamlinternalOO.run_initializers_opt(self, self$1, $$class);
@@ -174,7 +180,7 @@ var d = [
 
 function c2$prime_001($$class) {
   CamlinternalOO.get_method_label($$class, "m");
-  return (function (_, self) {
+  return (function (env, self) {
       return CamlinternalOO.create_object_opt(self, $$class);
     });
 }
@@ -187,6 +193,7 @@ var c2$prime = [
 ];
 
 function functional_point_init($$class) {
+  var y = CamlinternalOO.new_variable($$class, "");
   var ids = CamlinternalOO.new_methods_variables($$class, shared, shared$2);
   var move = ids[0];
   var get_x = ids[1];
@@ -203,9 +210,10 @@ function functional_point_init($$class) {
             return copy;
           })
       ]);
-  return (function (_, self, y) {
+  return (function (env, self, y$1) {
       var self$1 = CamlinternalOO.create_object_opt(self, $$class);
-      self$1[x] = y;
+      self$1[y] = y$1;
+      self$1[x] = y$1;
       return self$1;
     });
 }
@@ -227,6 +235,7 @@ eq("File \"class6_test.ml\", line 60, characters 5-12", /* tuple */[
     ]);
 
 function bad_functional_point_init($$class) {
+  var y = CamlinternalOO.new_variable($$class, "");
   var ids = CamlinternalOO.new_methods_variables($$class, shared, shared$2);
   var move = ids[0];
   var get_x = ids[1];
@@ -241,9 +250,10 @@ function bad_functional_point_init($$class) {
             return Curry._2(bad_functional_point[0], 0, self$7[x] + d | 0);
           })
       ]);
-  return (function (_, self, y) {
+  return (function (env, self, y$1) {
       var self$1 = CamlinternalOO.create_object_opt(self, $$class);
-      self$1[x] = y;
+      self$1[y] = y$1;
+      self$1[x] = y$1;
       return self$1;
     });
 }
@@ -277,7 +287,7 @@ eq("File \"class6_test.ml\", line 74, characters 5-12", /* tuple */[
       Caml_oo_curry.js1(291546447, 8, p$2)
     ]);
 
-Mt.from_pair_suites("class6_test.ml", suites[0]);
+Mt.from_pair_suites("Class6_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

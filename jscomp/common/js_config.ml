@@ -78,7 +78,7 @@ let set_current_file f  = current_file := f
 let get_current_file () = !current_file
 let get_module_name () =
   Filename.chop_extension
-    (Filename.basename (String.uncapitalize !current_file))
+    (Filename.basename (Ext_string.uncapitalize_ascii !current_file))
 
 let iset_debug_file _ = ()
 let set_debug_file  f = debug_file := f
@@ -107,3 +107,6 @@ let binary_ast = ref false
 let bs_suffix = ref false 
 
 let debug = ref false
+
+let force_cmi = ref false
+let force_cmj = ref false

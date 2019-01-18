@@ -32,7 +32,7 @@ let core_type_of_type_declaration
     } -> 
     Typ.constr 
       {txt = Lident txt ; loc}
-      (Ext_list.map fst ptype_params)
+      (Ext_list.map ptype_params  fst)
 
 let new_type_of_type_declaration 
     (tdcl : Parsetree.type_declaration) newName = 
@@ -42,7 +42,7 @@ let new_type_of_type_declaration
     } -> 
     (Typ.constr 
       {txt = Lident newName ; loc}
-      (Ext_list.map fst ptype_params),
+      (Ext_list.map ptype_params fst ),
       { Parsetree.ptype_params = tdcl.ptype_params;
         ptype_name = {txt = newName;loc};
         ptype_kind = Ptype_abstract; 
@@ -50,23 +50,12 @@ let new_type_of_type_declaration
         ptype_loc = tdcl.ptype_loc;
         ptype_cstrs = []; ptype_private = Public; ptype_manifest = None}
     )
-
       
-let lift_string_list_to_array (labels : string list) = 
-  Exp.array
-    (Ext_list.map (fun s -> Exp.constant (Const_string (s, None)))
-       labels)
-
-let lift_int i = Exp.constant (Const_int i)
-let lift_int_list_to_array (labels : int list) = 
-  Exp.array (Ext_list.map lift_int labels)
-
 
 let mk_fun ~loc (typ : Parsetree.core_type) 
     (value : string) body
   : Parsetree.expression = 
-  Exp.fun_ 
-    "" None
+  Ast_compatible.fun_
     (Pat.constraint_ (Pat.var {txt = value ; loc}) typ)
     body
 
@@ -75,14 +64,14 @@ let destruct_label_declarations ~loc
     (labels : Parsetree.label_declaration list) : 
   (Parsetree.core_type * Parsetree.expression) list * string list 
   =
-  Ext_list.fold_right
-    (fun   ({pld_name = {txt}; pld_type} : Parsetree.label_declaration) 
+  Ext_list.fold_right labels ([], [])
+    (fun {pld_name = {txt}; pld_type} 
       (core_type_exps, labels) -> 
       ((pld_type, 
         Exp.field (Exp.ident {txt = Lident arg_name ; loc}) 
           {txt = Lident txt ; loc}) :: core_type_exps),
       txt :: labels 
-    ) labels ([], [])
+    ) 
 
 let notApplicable 
   loc derivingName = 

@@ -90,6 +90,14 @@ string ElideMiddle(const string& str, size_t width);
 /// Truncates a file to the given size.
 bool Truncate(const string& path, size_t size, string* err);
 
+enum AnsiType {
+    COLOR_FORCE,
+    COLOR_NO,
+    COLOR_UNKOWN
+};
+
+bool ShouldBeColorFul(bool terminal);
+
 #ifdef _MSC_VER
 #define snprintf _snprintf
 #define fileno _fileno

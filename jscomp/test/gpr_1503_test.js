@@ -14,7 +14,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -45,7 +45,7 @@ eq("File \"gpr_1503_test.ml\", line 21, characters 7-14", Int64.max_int, Caml_fo
 
 eq("File \"gpr_1503_test.ml\", line 22, characters 7-14", Int64.min_int, Caml_format.caml_int64_of_string(Caml_format.caml_int64_format("%d", Int64.min_int)));
 
-Mt.from_pair_suites("gpr_1503_test.ml", suites[0]);
+Mt.from_pair_suites("Gpr_1503_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

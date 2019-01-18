@@ -3,7 +3,7 @@
 var Mt = require("./mt.js");
 var Block = require("../../lib/js/block.js");
 var Bytes = require("../../lib/js/bytes.js");
-var Caml_string = require("../../lib/js/caml_string.js");
+var Caml_bytes = require("../../lib/js/caml_bytes.js");
 
 var suites = /* record */[/* contents : [] */0];
 
@@ -16,7 +16,7 @@ function eq(loc, param) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -28,7 +28,11 @@ function eq(loc, param) {
   return /* () */0;
 }
 
-var b = Caml_string.caml_create_string(3);
+var b = [
+  0,
+  0,
+  0
+];
 
 b[0] = /* "a" */97;
 
@@ -38,7 +42,7 @@ b[2] = /* "c" */99;
 
 Bytes.blit(b, 0, b, 1, 2);
 
-var res = Caml_string.bytes_to_string(b);
+var res = Caml_bytes.bytes_to_string(b);
 
 console.log(res);
 
@@ -47,7 +51,11 @@ eq("File \"bytes_split_gpr_743_test.ml\", line 17, characters 5-12", /* tuple */
       res
     ]);
 
-var b$1 = Caml_string.caml_create_string(3);
+var b$1 = [
+  0,
+  0,
+  0
+];
 
 b$1[0] = /* "a" */97;
 
@@ -57,7 +65,7 @@ b$1[2] = /* "c" */99;
 
 Bytes.blit(b$1, 1, b$1, 0, 2);
 
-var res2 = Caml_string.bytes_to_string(b$1);
+var res2 = Caml_bytes.bytes_to_string(b$1);
 
 console.log(res2);
 
@@ -66,7 +74,7 @@ eq("File \"bytes_split_gpr_743_test.ml\", line 32, characters 5-12", /* tuple */
       res2
     ]);
 
-Mt.from_pair_suites("bytes_split_gpr_743_test.ml", suites[0]);
+Mt.from_pair_suites("Bytes_split_gpr_743_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

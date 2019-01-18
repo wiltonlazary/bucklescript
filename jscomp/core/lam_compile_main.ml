@@ -53,12 +53,7 @@ let compile_group ({filename = file_name; env;} as meta : Lam_stats.t)
         3. [E.mldot]
      *)
   (* ATTENTION: check {!Lam_compile_global} for consistency  *)      
-  (** Special handling for values in [Pervasives] *)
-  | Single(_, ({name="stdout"|"stderr"|"stdin";_} as id),_ ),
-    "pervasives.ml" -> 
-    Js_output.make 
-      [ S.alias_variable id
-        ~exp:(E.runtime_ref  Js_runtime_modules.io id.name)]
+  (** Special handling for values in [Pervasives] *)  
   (* 
          we delegate [stdout, stderr, and stdin] into [caml_io] module, 
          the motivation is to help dead code eliminatiion, it's helpful 
@@ -75,23 +70,20 @@ let compile_group ({filename = file_name; env;} as meta : Lam_stats.t)
     (* let lam = Optimizer.simplify_lets [] lam in  *)
     (* can not apply again, it's wrong USE it with care*)
     (* ([Js_stmt_make.comment (Gen_of_env.query_type id  env )], None)  ++ *)
-    Lam_compile.compile_let  kind { st = Declare (kind, id);
-                                    should_return = ReturnFalse;
+    Lam_compile.compile_lambda { continuation = Declare (kind, id);
                                     jmp_table = Lam_compile_context.empty_handler_map;
                                     meta
-                                  } id  lam
+                                  } lam
 
   | Recursive id_lams, _   -> 
     Lam_compile.compile_recursive_lets 
-      { st = EffectCall ;
-        should_return = ReturnFalse; 
+      { continuation = EffectCall ReturnFalse; 
         jmp_table = Lam_compile_context.empty_handler_map;
         meta
       } 
       id_lams
   | Nop lam, _ -> (* TODO: Side effect callls, log and see statistics *)
-    Lam_compile.compile_lambda {st = EffectCall;
-                                should_return = ReturnFalse;
+    Lam_compile.compile_lambda {continuation = EffectCall ReturnFalse;
                                 jmp_table = Lam_compile_context.empty_handler_map;
                                 meta
                                } lam
@@ -100,7 +92,7 @@ let compile_group ({filename = file_name; env;} as meta : Lam_stats.t)
 
  (** Also need analyze its depenency is pure or not *)
 let no_side_effects (rest : Lam_group.t list) : string option = 
-    Ext_list.find_opt (fun (x : Lam_group.t) -> 
+    Ext_list.find_opt rest (fun (x : Lam_group.t) -> 
         match x with 
         | Single(kind,id,body) -> 
           begin 
@@ -112,18 +104,18 @@ let no_side_effects (rest : Lam_group.t list) : string option =
             | _ -> None
           end
         | Recursive bindings -> 
-          Ext_list.find_opt (fun (id,lam) -> 
+          Ext_list.find_opt  bindings (fun (id,lam) -> 
               if not @@ Lam_analysis.no_side_effects lam 
               then Some (Printf.sprintf "%s" id.Ident.name )
               else None
-            ) bindings
+            )
         | Nop lam -> 
           if not @@ Lam_analysis.no_side_effects lam 
           then 
             (*  (Lam_util.string_of_lambda lam) *)
             Some ""
           else None (* TODO :*))
-      rest
+      
 
 
 
@@ -136,19 +128,19 @@ let compile  ~filename (output_prefix : string) env _sigs
   let export_ident_sets = Ident_set.of_list export_idents in 
   (* To make toplevel happy - reentrant for js-demo *)
   let () = 
-#if BS_DEBUG then     
+#if undefined BS_RELEASE_BUILD then     
     export_idents |> List.iter 
-      (fun (id : Ident.t) -> Ext_log.dwarn __LOC__ "export: %s/%d"  id.name id.stamp) ;
+      (fun (id : Ident.t) -> Ext_log.dwarn ~__POS__ "export: %s/%d"  id.name id.stamp) ;
 #end      
     Lam_compile_env.reset () ;
   in 
-  let lam, may_required_modules = Lam.convert export_ident_sets lam in 
+  let lam, may_required_modules = Lam_convert.convert export_ident_sets lam in 
   let _d  = fun s lam -> 
     let result = Lam_util.dump env s lam  in
-#if BS_DEBUG then 
-    Ext_log.dwarn __LOC__ "START CHECKING PASS %s@." s;
-    ignore @@ Lam.check (Js_config.get_current_file ()) lam;
-    Ext_log.dwarn __LOC__ "FINISH CHECKING PASS %s@." s;
+#if undefined BS_RELEASE_BUILD then 
+    Ext_log.dwarn ~__POS__ "START CHECKING PASS %s@." s;
+    ignore @@ Lam_check.check (Js_config.get_current_file ()) lam;
+    Ext_log.dwarn ~__POS__ "FINISH CHECKING PASS %s@." s;
 #end
     result 
   in
@@ -200,11 +192,11 @@ let compile  ~filename (output_prefix : string) env _sigs
        |> _d "scc" *)
     |> Lam_pass_exits.simplify_exits
     |> _d "simplify_lets"
-#if BS_DEBUG then    
+#if undefined BS_RELEASE_BUILD then    
     |> (fun lam -> 
        let () = 
-        Ext_log.dwarn __LOC__ "Before coercion: %a@." Lam_stats.print meta in 
-      Lam.check (Js_config.get_current_file ()) lam
+        Ext_log.dwarn ~__POS__ "Before coercion: %a@." Lam_stats.print meta in 
+      Lam_check.check (Js_config.get_current_file ()) lam
     ) 
 #end    
   in
@@ -213,9 +205,9 @@ let compile  ~filename (output_prefix : string) env _sigs
     Lam_coercion.coerce_and_group_big_lambda  meta lam
   in 
 
-#if BS_DEBUG then   
+#if undefined BS_RELEASE_BUILD then   
   let () =
-    Ext_log.dwarn __LOC__ "After coercion: %a@." Lam_stats.print meta ;
+    Ext_log.dwarn ~__POS__ "After coercion: %a@." Lam_stats.print meta ;
     if Js_config.is_same_file () then
       let f =
         Ext_path.chop_extension ~loc:__LOC__ filename ^ ".lambda" in
@@ -226,17 +218,16 @@ let compile  ~filename (output_prefix : string) env _sigs
   in
 #end  
   let maybe_pure = no_side_effects groups in
-#if BS_DEBUG then 
-  let () = Ext_log.dwarn __LOC__ "\n@[[TIME:]Pre-compile: %f@]@."  (Sys.time () *. 1000.) in      
+#if undefined BS_RELEASE_BUILD then 
+  let () = Ext_log.dwarn ~__POS__ "\n@[[TIME:]Pre-compile: %f@]@."  (Sys.time () *. 1000.) in      
 #end  
-  let body  = 
-    groups
-    |> Ext_list.map (fun group -> compile_group meta group)
+  let body  =     
+    Ext_list.map groups (fun group -> compile_group meta group)
     |> Js_output.concat
     |> Js_output.output_as_block
   in
-#if BS_DEBUG then 
-  let () = Ext_log.dwarn __LOC__ "\n@[[TIME:]Post-compile: %f@]@."  (Sys.time () *. 1000.) in      
+#if undefined BS_RELEASE_BUILD then 
+  let () = Ext_log.dwarn ~__POS__ "\n@[[TIME:]Post-compile: %f@]@."  (Sys.time () *. 1000.) in      
 #end    
   (* The file is not big at all compared with [cmo] *)
   (* Ext_marshal.to_file (Ext_path.chop_extension filename ^ ".mj")  js; *)
@@ -267,27 +258,30 @@ let compile  ~filename (output_prefix : string) env _sigs
         |>
         (fun x ->
            if !Js_config.sort_imports then
-             Ext_list.sort_via_array
-               (fun (id1 : Lam_module_ident.t) (id2 : Lam_module_ident.t) ->
+             Ext_list.sort_via_array x
+               (fun id1 id2 ->
                   Ext_string.compare (Lam_module_ident.name id1) (Lam_module_ident.name id2)
-               ) x
+               ) 
            else
              x
         )
       in
       Warnings.check_fatal ();  
+      let effect = 
+        Lam_stats_export.get_dependent_module_effect
+        meta maybe_pure external_module_ids in 
       let v : Js_cmj_format.t = 
         Lam_stats_export.export_to_cmj 
           meta  
-          maybe_pure 
-          external_module_ids
+          effect 
           coerced_input.export_map
           (get_cmj_case output_prefix)
       in
       (if not @@ !Clflags.dont_write_files then
          Js_cmj_format.to_file 
+          ~check_exists:(not !Js_config.force_cmj)
            (output_prefix ^ Literals.suffix_cmj) v);
-      {J.program = program ; side_effect = v.effect ; modules = external_module_ids }      
+      {J.program = program ; side_effect = effect ; modules = external_module_ids }      
     )
 ;;
 
@@ -299,29 +293,25 @@ let lambda_as_module
     (filename : string) 
     (output_prefix : string)
     (lam : Lambda.lambda) = 
-  begin 
-    Js_config.set_current_file filename ;  
- 
-    let lambda_output = 
-        compile ~filename output_prefix finalenv current_signature lam in
-    let basename =  
-       Ext_namespace.js_name_of_basename !Js_config.bs_suffix 
-        (Filename.basename
+  let lambda_output = 
+    compile ~filename output_prefix finalenv current_signature lam in
+  let basename =  
+    Ext_namespace.js_name_of_basename !Js_config.bs_suffix 
+      (Filename.basename
          output_prefix) in
-    let package_info = Js_packages_state.get_packages_info () in 
-    if Js_packages_info.is_empty package_info  then 
+  let package_info = Js_packages_state.get_packages_info () in 
+  if Js_packages_info.is_empty package_info  then 
     begin 
       let output_chan chan =         
         Js_dump_program.dump_deps_program ~output_prefix NodeJS lambda_output chan in
       (if !Js_config.dump_js then output_chan stdout);
-      if not @@ !Clflags.dont_write_files then 
+      if not !Clflags.dont_write_files then 
         Ext_pervasives.with_file_as_chan 
           (Filename.dirname filename //  basename)
-           output_chan
+          output_chan
     end
-    else  begin 
-      package_info.module_systems 
-      |> List.iter begin fun (module_system, _path) -> 
+  else
+    Ext_list.iter package_info.module_systems (fun (module_system, _path) -> 
         let output_chan chan  = 
           Js_dump_program.dump_deps_program ~output_prefix
             module_system 
@@ -331,15 +321,19 @@ let lambda_as_module
            output_chan  stdout);
         if not @@ !Clflags.dont_write_files then 
           Ext_pervasives.with_file_as_chan
+#if BS_NATIVE then
+            (if Filename.is_relative _path then Lazy.force Ext_filename.package_dir // _path // basename
+             (* #913 only generate little-case js file *)
+            else _path // basename) output_chan )
+#else
             (Lazy.force Ext_filename.package_dir //
              _path //
-              basename
+             basename
              (* #913 only generate little-case js file *)
-            ) output_chan
+            ) output_chan )
+  
+#end
 
-      end
-    end 
-  end
 (* We can use {!Env.current_unit = "Pervasives"} to tell if it is some specific module, 
     We need handle some definitions in standard libraries in a special way, most are io specific, 
     includes {!Pervasives.stdin, Pervasives.stdout, Pervasives.stderr}

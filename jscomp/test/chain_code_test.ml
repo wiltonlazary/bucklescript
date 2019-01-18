@@ -6,7 +6,7 @@ let eq loc x y =
     (loc ^" id " ^ (string_of_int !test_id), (fun _ -> Mt.Eq(x,y))) :: !suites
 
 let f h = 
-  let open Js_unsafe in 
+  let open Js.Internal in 
   !(!(!h#x)#y)#z
 
 let f2 h = 
@@ -27,4 +27,4 @@ let f4 h x y =
 let () = 
   eq __LOC__ 32  [%bs.obj f2 { x = {y = {z = 32}}} ]
 
-let () = Mt.from_pair_suites __FILE__ !suites
+let () = Mt.from_pair_suites __MODULE__ !suites

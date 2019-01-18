@@ -1,10 +1,9 @@
 'use strict';
 
-var Bigarray = require("../../lib/js/bigarray.js");
 var Caml_int32 = require("../../lib/js/caml_int32.js");
 var Caml_missing_polyfill = require("../../lib/js/caml_missing_polyfill.js");
 
-function sum() {
+function sum(v) {
   var result = 0;
   for(var i = 0 ,i_finish = Caml_missing_polyfill.not_implemented("caml_ba_dim_1") - 1 | 0; i <= i_finish; ++i){
     result = result + Caml_missing_polyfill.not_implemented("caml_ba_get_1") | 0;
@@ -29,7 +28,7 @@ function init2(v) {
   return /* () */0;
 }
 
-function init3() {
+function init3(v) {
   for(var i = 0 ,i_finish = Caml_missing_polyfill.not_implemented("caml_ba_dim_1") - 1 | 0; i <= i_finish; ++i){
     Caml_missing_polyfill.not_implemented("caml_ba_set_1");
   }
@@ -43,4 +42,4 @@ exports.sum = sum;
 exports.init = init;
 exports.init2 = init2;
 exports.init3 = init3;
-/* Bigarray Not a pure module */
+/* No side effect */

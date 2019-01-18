@@ -5,7 +5,10 @@ COMPILER=../../lib/bsc.exe
 MAP_FILES= node belt
 
 SOURCE_LIST= node_path node_fs node_process dict node_module js_array js_string \
-	js_re js_null_undefined node_buffer js_types js_json js_obj \
+	js_int js_float js_exn\
+	js_re js_null js_undefined js_null_undefined \
+	js_typed_array\
+	node_buffer js_types js_json js_obj \
 	js_vector js_list js_option \
 	js_console\
 	js_result\
@@ -58,9 +61,6 @@ SOURCE_LIST= node_path node_fs node_process dict node_module js_array js_string 
 	belt_HashMapString\
 	belt_Debug\
 
-# belt_Bag\
-# belt_BagM\
-# belt_dyn belt_dyn_lib\
 
 $(addsuffix .cmj, $(SOURCE_LIST)): $(addsuffix .cmj, $(MAP_FILES))
 
@@ -71,7 +71,7 @@ BS_COMMON_FLAGS= -no-alias-deps -bs-no-version-header -absname -bs-diagnose -bs-
 
 BS_FLAGS=  $(BS_COMMON_FLAGS) $(BS_PKG_FLAGS)
 
-COMPFLAGS += $(BS_FLAGS)  -I ../runtime -I ../stdlib -w +3-40-49 -warn-error A -bin-annot
+COMPFLAGS +=  -I ../runtime -nostdlib -nopervasives -open Bs_stdlib_mini $(BS_FLAGS)  -w +3-40-49 -warn-error A -bin-annot
 
 
 node.cmi : $(COMPILER)
@@ -168,7 +168,7 @@ belt_SortArrayString.ml : sort.cppo.ml
 	cppo -D TYPE_STRING $^ >$@
 belt_SortArrayInt.mli : sort.cppo.mli
 	cppo -D TYPE_INT $^ > $@
-belt_gSortArrayString.mli : sort.cppo.mli
+belt_SortArrayString.mli : sort.cppo.mli
 	cppo -D TYPE_STRING $^ > $@
 endif	
 

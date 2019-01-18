@@ -31,4 +31,8 @@
 
 (** Utilities for [option] type *)
 
-val bind : 'a option -> ('a -> 'b) -> 'b option
+val map : 'a option -> ('a -> 'b) -> 'b option
+
+val iter : 'a option -> ('a -> unit) -> unit
+
+val exists : 'a option -> ('a -> bool) -> bool

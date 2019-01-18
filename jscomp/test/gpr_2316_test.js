@@ -2,7 +2,7 @@
 
 var Mt = require("./mt.js");
 var Block = require("../../lib/js/block.js");
-var Js_exn = require("../../lib/js/js_exn.js");
+var Caml_js_exceptions = require("../../lib/js/caml_js_exceptions.js");
 var Caml_builtin_exceptions = require("../../lib/js/caml_builtin_exceptions.js");
 
 var suites = /* record */[/* contents : [] */0];
@@ -14,7 +14,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -35,7 +35,7 @@ try {
       ];
 }
 catch (raw_exn){
-  var exn = Js_exn.internalToOCamlException(raw_exn);
+  var exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
   if (exn[0] === Caml_builtin_exceptions.failure) {
     y = exn[1];
   } else {
@@ -54,7 +54,7 @@ try {
       ];
 }
 catch (raw_exn$1){
-  var exn$1 = Js_exn.internalToOCamlException(raw_exn$1);
+  var exn$1 = Caml_js_exceptions.internalToOCamlException(raw_exn$1);
   if (exn$1[0] === Caml_builtin_exceptions.failure) {
     x = exn$1[1];
   } else {
@@ -71,7 +71,7 @@ eq("File \"gpr_2316_test.ml\", line 20, characters 5-12", y, "boo");
 
 eq("File \"gpr_2316_test.ml\", line 21, characters 5-12", x, "boo");
 
-Mt.from_pair_suites("gpr_2316_test.ml", suites[0]);
+Mt.from_pair_suites("Gpr_2316_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

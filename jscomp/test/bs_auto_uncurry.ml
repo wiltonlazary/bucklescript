@@ -1,5 +1,8 @@
 
 
+module Curry = struct 
+end 
+
 external map : 'a array -> ('a -> 'b [@bs.uncurry  ]) -> 'b array = 
     "Array.prototype.map.call"
     [@@bs.val]
@@ -177,7 +180,7 @@ for example
 `let u = f a b c in u d ` may have a side effect here when creating [u].
 We should document it clearly
 *)
-let a4 = Js_unsafe.js_fn_mk4 (fun x y z -> incr v ;  fun d -> 1 + d)
+let a4 = Js.Internal.js_fn_mk4 (fun x y z -> incr v ;  fun d -> 1 + d)
 
 
 let () = 
@@ -186,7 +189,7 @@ let () =
 
 ;;
 
-Mt.from_pair_suites __FILE__ !suites
+Mt.from_pair_suites __MODULE__ !suites
 *)
 
 let unit_magic () =

@@ -29,37 +29,30 @@
 external _LOG2E : float = "Math.LOG2E" [@@bs.val]
 external _LOG10E : float = "Math.LOG10E" [@@bs.val]
 external abs_float : float -> float = "Math.abs" [@@bs.val]
-external floor_float : float -> float = "Math.floor" [@@bs.val]
+external floor : float -> float = "Math.floor" [@@bs.val]
+external exp : float -> float =  "exp" [@@bs.val] [@@bs.scope "Math"]
 external log : float -> float = "Math.log" [@@bs.val]
-external max_float : float -> float -> float = "Math.max" [@@bs.val]
-external min_float : float -> float -> float = "Math.min" [@@bs.val]
+external sqrt : float -> float =  "sqrt" [@@bs.val] [@@bs.scope "Math"] 
 external pow_float : base:float -> exp:float -> float = "Math.pow" [@@bs.val]
+external int_of_float : float -> int = "%intoffloat"
+external float_of_int : int -> float = "%floatofint"
 
-open Js_typed_array
-
-let caml_int32_float_of_bits (x : int32) =
-  let int32 = Int32_array.make [| x |] in
+let caml_int32_float_of_bits : int32 -> float = fun%raw x -> {|
+    return new Float32Array(new Int32Array([x]).buffer)[0] 
+|}
+  (* let int32 = Int32_array.make [| x |] in
   let float32 = Float32_array.fromBuffer ( Int32_array.buffer int32) in
-  Float32_array.unsafe_get float32 0
+  Float32_array.unsafe_get float32 0 *)
 
-let caml_int32_bits_of_float (x : float) =
-  let float32 = Float32_array.make [|x|] in
-  Int32_array.unsafe_get (Int32_array.fromBuffer (Float32_array.buffer float32)) 0
-
-let caml_classify_float x : fpclass  =
-  if Js_float.isFinite x then
-    if abs_float x >= 2.2250738585072014e-308  then
-      FP_normal
-    else if x <> 0. then FP_subnormal
-    else FP_zero
-  else
-  if Js_float.isNaN x then
-    FP_nan
-  else FP_infinite
+let caml_int32_bits_of_float : float -> int32 = fun%raw x -> {| 
+  return new Int32Array(new Float32Array([x]).buffer)[0] 
+|}
+  (* let float32 = Float32_array.make [|x|] in
+  Int32_array.unsafe_get (Int32_array.fromBuffer (Float32_array.buffer float32)) 0 *)
 
 
 let caml_modf_float (x : float) : float * float =
-  if Js_float.isFinite x then
+  if Caml_float_extern.isFinite x then
     let neg = 1. /. x < 0. in
     let x = abs_float x  in
     let i = floor x in
@@ -67,11 +60,11 @@ let caml_modf_float (x : float) : float * float =
     if neg then
       -. f, -. i
     else f, i
-  else if Js_float.isNaN x then Js_float._NaN, Js_float._NaN
+  else if Caml_float_extern.isNaN x then Caml_float_extern._NaN, Caml_float_extern._NaN
   else (1. /. x , x)
 
 let caml_ldexp_float (x: float) (exp: int) : float =
-  let x', exp' = ref x, ref (float exp) in
+  let x', exp' = ref x, ref (float_of_int exp) in
   if !exp' > 1023. then begin
     exp' := !exp' -. 1023.;
     x' := !x' *. pow_float ~base:2. ~exp:1023.;
@@ -88,12 +81,12 @@ let caml_ldexp_float (x: float) (exp: int) : float =
 
 
 let caml_frexp_float (x: float): float * int =
-  if x = 0. || not  (Js_float.isFinite x) then
+  if x = 0. || not  (Caml_float_extern.isFinite x) then
     (x, 0)
   else begin
     let neg = x < 0. in
     let x' = ref (abs_float x) in
-    let exp = ref (floor_float (_LOG2E *. log !x') +. 1.) in
+    let exp = ref (floor (_LOG2E *. log !x') +. 1.) in
     begin
       x' := !x' *. pow_float ~base:2. ~exp:(-.(!exp));
       if !x' < 0.5 then begin
@@ -129,8 +122,8 @@ let caml_log1p_float : float -> float = function x ->
 
 let caml_hypot_float (x: float) (y: float): float =
   let x0, y0 = abs_float x, abs_float y in
-  let a = max_float x0 y0 in
-  let b = min_float x0 y0 /. if a <> 0. then a else 1. in
+  let a = Pervasives.max x0 y0 in
+  let b = Pervasives.min x0 y0 /. if a <> 0. then a else 1. in
   a *. sqrt (1. +. b *. b)
 
 

@@ -868,7 +868,7 @@ var suites_16 = List.map((function (param) {
                             ]),
                           "swap16 %d"
                         ]), a),
-                (function () {
+                (function (param) {
                     return /* Eq */Block.__(0, [
                               Caml_int32.caml_bswap16(a),
                               b
@@ -893,7 +893,7 @@ var suites_32 = List.map((function (param) {
                             ]),
                           "swap32 %d"
                         ]), a),
-                (function () {
+                (function (param) {
                     return /* Eq */Block.__(0, [
                               Caml_int32.caml_int32_bswap(a),
                               b
@@ -918,7 +918,7 @@ var suites_64 = List.map((function (param) {
                             ]),
                           "swap64 %d"
                         ]), a[1] | 0),
-                (function () {
+                (function (param) {
                     return /* Eq */Block.__(0, [
                               Caml_int64.swap(a),
                               b
@@ -1007,7 +1007,7 @@ function f(s, param) {
                                         ]),
                                       "%s %i"
                                     ]), s, i),
-                            (function () {
+                            (function (param) {
                                 return /* Eq */Block.__(0, [
                                           Curry._1(Format.asprintf(x), Curry._1(swap, a)),
                                           b
@@ -1017,7 +1017,7 @@ function f(s, param) {
                   }), param[2]));
 }
 
-Mt.from_pair_suites("swap_test.ml", Pervasives.$at(suites_16, Pervasives.$at(suites_32, Pervasives.$at(suites_64, Pervasives.$at(f("d16", d16), f("d32", d32))))));
+Mt.from_pair_suites("Swap_test", Pervasives.$at(suites_16, Pervasives.$at(suites_32, Pervasives.$at(suites_64, Pervasives.$at(f("d16", d16), f("d32", d32))))));
 
 exports.tests_16 = tests_16;
 exports.tests_32 = tests_32;

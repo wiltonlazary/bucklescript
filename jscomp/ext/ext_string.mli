@@ -83,13 +83,37 @@ val for_all_from:
   (char -> bool) -> 
   bool 
 
-val for_all : (char -> bool) -> string -> bool
+val for_all : 
+  string -> 
+  (char -> bool) -> 
+  bool
 
 val is_empty : string -> bool
 
 val repeat : int -> string -> string 
 
 val equal : string -> string -> bool
+
+(**
+  [extract_until s cursor sep]
+   When [sep] not found, the cursor is updated to -1,
+   otherwise cursor is increased to 1 + [sep_position]
+   User can not determine whether it is found or not by
+   telling the return string is empty since 
+   "\n\n" would result in an empty string too.
+*)
+val extract_until:
+  string -> 
+  int ref -> (* cursor to be updated *)
+  char -> 
+  string
+
+val index_count:  
+  string -> 
+  int ->
+  char -> 
+  int -> 
+  int 
 
 (**
   [find ~start ~sub s]
@@ -132,6 +156,8 @@ val no_slash : string -> bool
 (** return negative means no slash, otherwise [i] means the place for first slash *)
 val no_slash_idx : string -> int 
 
+val no_slash_idx_from : string -> int -> int 
+
 (** if no conversion happens, reference equality holds *)
 val replace_slash_backward : string -> string 
 
@@ -142,6 +168,8 @@ val empty : string
 
 #if BS_COMPILER_IN_BROWSER then
 val compare :  string -> string -> int
+#elif OCAML_VERSION =~ ">4.3.0" then
+external compare : string -> string -> int = "caml_string_length_based_compare" [@@noalloc];;  
 #else
 external compare : string -> string -> int = "caml_string_length_based_compare" "noalloc";;
 #end  
@@ -162,3 +190,6 @@ val current_dir_lit : string
 
 val capitalize_ascii : string -> string
 
+val uncapitalize_ascii : string -> string
+
+val lowercase_ascii : string -> string 

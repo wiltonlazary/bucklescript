@@ -14,7 +14,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -256,7 +256,7 @@ eq("File \"ast_js_mapper_poly_test.ml\", line 89, characters 5-12", $$Array.map(
                   /* C5 */5
                 ])), /* array */[undefined]));
 
-Mt.from_pair_suites("ast_js_mapper_poly_test.ml", suites[0]);
+Mt.from_pair_suites("Ast_js_mapper_poly_test", suites[0]);
 
 var $plus$great = $$Array.append;
 

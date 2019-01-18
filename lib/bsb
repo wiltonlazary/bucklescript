@@ -16,13 +16,42 @@ var bsb_exe = __filename + ".exe"
 var LAST_SUCCESS_BUILD_STAMP = 0
 
 // All clients of type MiniWebSocket
+/**
+ * @type {any[]}
+ */
 var wsClients = []
 var watch_mode = false
 var verbose = false
+/**
+ * @type {string | undefined}
+ */
 var postBuild = undefined
 var useWebSocket = false
 var webSocketPort = 9999
 
+/**
+ * @returns {string}
+ */
+function getDateAsString(){
+    var n = new Date()
+    return n.getHours() + ":" + n.getMinutes() + ":" + n.getSeconds()
+}
+/**
+ * @time{[number,number]}
+ */
+var startTime 
+function updateStartTime(){
+    startTime = process.hrtime()
+    return ''
+}
+function updateFinishTime(){
+    var diff = process.hrtime(startTime)
+    return diff[0] * 1e9 + diff[1]
+}
+/**
+ * 
+ * @param {*} str 
+ */
 function dlog(str){
     if(verbose){
         console.log(str)
@@ -32,18 +61,16 @@ function notifyClients() {
     wsClients = wsClients.filter(x => !x.closed && !x.socket.destroyed )
     var wsClientsLen = wsClients.length
     dlog(`Alive sockets number: ${wsClientsLen}`)    
-    for (var i = 0; i < wsClientsLen; ++ i ) {
-        // in reverse order, the last pushed get notified earlier
-        var client = wsClients[wsClientsLen - i - 1] 
-        if (!client.closed) {
-            client.sendText(
-                JSON.stringify(
+    var data = JSON.stringify(
                     {
                         LAST_SUCCESS_BUILD_STAMP: LAST_SUCCESS_BUILD_STAMP
                     }
                 )
-
-            )
+    for (var i = 0; i < wsClientsLen; ++ i ) {
+        // in reverse order, the last pushed get notified earlier
+        var client = wsClients[wsClientsLen - i - 1] 
+        if (!client.closed) {
+            client.sendText(data)
         }
     }
 }
@@ -55,6 +82,9 @@ function setUpWebSocket() {
         .on('upgrade', function (req, socket, upgradeHead) {
             dlog("connection opened");
             var ws = new WebSocket(req, socket, upgradeHead);
+            socket.on("error",function (err){
+                dlog(`Socket Error ${err}`)
+            })
             wsClients.push(ws)
         })
         .on('error', function (err) {
@@ -97,7 +127,23 @@ for (var i = 2; i < process_argv.length; ++i) {
 }
 
 
+if(
+    process.env.NINJA_ANSI_FORCED === undefined 
+  ){
 
+    if(require ('tty').isatty(1)){
+        process.env.NINJA_ANSI_FORCED = '1'
+    }
+    
+} else {
+    dlog(`NINJA_ANSI_FORCED: "${process.env.NINJA_ANSI_FORCED}"`)
+}
+
+// Note the watch mode flag `-w` is not very useful to bsb.exe
+// A trick is played that for such flags `bsb.exe -make-world -w`
+// it will exit ignoreing `-make-world` since it will be triggered
+// again in bsb
+// The following process atm only spawned `bsb.exe` directly
 try {
     child_process.execFileSync(bsb_exe, delegate_args, { stdio: 'inherit' })
 } catch (e) {
@@ -131,7 +177,10 @@ if (watch_mode) {
      */
     var watchers = [];
 
-
+    function onUncaughtException (err){
+        console.error("Uncaught Exception", err)
+        process.exit(1)
+    }
     function onExit() {
         try {
             fs.unlinkSync(lockFileName)
@@ -164,7 +213,7 @@ if (watch_mode) {
             process.on('SIGUSR2', onExit)
             process.on('SIGTERM', onExit)
             process.on('SIGHUP', onExit)
-            process.on('uncaughtException', onExit)
+            process.on('uncaughtException', onUncaughtException)
             process.stdin.on('close', onExit)
             // close when stdin stops
             if (os.platform() !== "win32") {
@@ -202,7 +251,7 @@ if (watch_mode) {
             if (watcher.dir === bsconfig) {
                 return true;
             } else if (watch_files.indexOf(watcher.dir) < 0) {
-                verbose && console.log(watcher.dir, 'is no longer watched');
+                dlog(`${watcher.dir} is no longer watched`);
                 watcher.watcher.close();
                 return false
             } else {
@@ -214,7 +263,7 @@ if (watch_mode) {
         for (var i = 0; i < watch_files.length; ++i) {
             var dir = watch_files[i]
             if (!watchers.find(function (watcher) { return watcher.dir === dir })) {
-                verbose && console.log('watching dir', dir, 'now')
+                dlog(`watching dir ${dir} now`)
                 var watcher = fs.watch(dir, on_change);
                 watchers.push({ dir: dir, watcher: watcher })
             } else {
@@ -253,7 +302,7 @@ if (watch_mode) {
     function logFinish(code) {
         if (std_is_tty) {
             if (code === 0) {
-                console.log("\x1b[36m>>>> Finish compiling\x1b[0m")
+                console.log("\x1b[36m>>>> Finish compiling\x1b[0m", Math.floor(updateFinishTime()/1e6),"mseconds")
             } else {
                 console.log("\x1b[1;31m>>>> Finish compiling(exit: " + code + ")\x1b[0m")
             }
@@ -268,7 +317,7 @@ if (watch_mode) {
     }
     function logStart() {
         if (std_is_tty) {
-            console.log("\x1b[36m>>>> Start compiling\x1b[0m");
+            console.log("\x1b[36m>>>> Start compiling\x1b[0m",updateStartTime());
         } else {
             console.log(">>>> Start compiling");
         }
@@ -285,7 +334,7 @@ if (watch_mode) {
             notifyClients()
             if(postBuild){
                 dlog(`running postbuild command: ${postBuild}`)
-                child_process.exec(postBuild, { shell: true })
+                child_process.exec(postBuild)
             }
         }
         logFinish(code)
@@ -297,7 +346,7 @@ if (watch_mode) {
             watch_build(files)
         }
     }
-    var sub_config = { stdio: ['inherit', 'inherit', 'pipe'] }
+
 
 
     /**
@@ -320,13 +369,13 @@ if (watch_mode) {
         if (acquireBuild()) {
             logStart()
             if (reasons_to_rebuild.length === 0) {
-                console.log("Rebuilding since just got started")
+                dlog("Rebuilding since just got started")
             } else {
-                console.log("Rebuilding since", reasons_to_rebuild)
+                dlog(`Rebuilding since ${reasons_to_rebuild}`)
             }
             reasons_to_rebuild = [];
             var p = child_process
-                .spawn(bsb_exe, [], sub_config);
+                .spawn(bsb_exe, [], { stdio: ['inherit', 'inherit', 'pipe'] });
             p.on('exit', build_finished_callback)
             p.stderr
                 .setEncoding('utf8')
@@ -342,7 +391,7 @@ if (watch_mode) {
      */
     function on_change(event, reason) {
         if (validEvent(event, reason)) {
-            verbose && console.log("Event", event, reason);
+            dlog(`Event ${event} ${reason}`);
             reasons_to_rebuild.push([event, reason])
             if (needRebuild()) {
                 build()

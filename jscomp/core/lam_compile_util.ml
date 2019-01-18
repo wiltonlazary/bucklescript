@@ -31,7 +31,7 @@
 
 
 
-let jsop_of_comp (cmp : Lambda.comparison) : Js_op.binop = 
+let jsop_of_comp (cmp : Lam_compat.comparison) : Js_op.binop = 
   match cmp with 
   | Ceq -> EqEqEq (* comparison*)
   | Cneq -> NotEqEq
@@ -46,14 +46,17 @@ let comment_of_tag_info  (x : Lam_tag_info.t) =
   | Blk_tuple -> Some "tuple"
   | Blk_variant x -> Some ("`" ^  x)
   | Blk_record _ -> Some "record"
-
+#if OCAML_VERSION =~ ">4.03.0" then
+  | Blk_record_inlined (_,ctor,_) -> Some ctor
+  | Blk_record_ext _ -> None
+#end  
   | Blk_array -> Some "array"
   | Blk_module _ ->  
      (* Turn it on next time to save some noise diff*)
     Some "module"
   | Blk_extension_slot -> None
   | Blk_na -> None 
-let comment_of_pointer_info (x :  Lam.pointer_info)= 
+let comment_of_pointer_info (x :  Lam_pointer_info.t)= 
   match x with 
   | Pt_constructor x -> Some x 
   | Pt_variant x -> Some x 

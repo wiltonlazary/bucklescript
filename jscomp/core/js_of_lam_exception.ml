@@ -48,7 +48,7 @@ let make exception_str  : J.expression =
 
 
 let get_builtin_by_name name = 
-  E.runtime_ref Js_runtime_modules.builtin_exceptions (String.lowercase name)
+  E.runtime_ref Js_runtime_modules.builtin_exceptions (Ext_string.lowercase_ascii name)
 
 
 (* let match_exception_def (args : J.expression list) =  *)
@@ -78,5 +78,7 @@ let caml_set_oo_id args =
     (*   ->  *)
     (*   make_exception exception_str  *)
     (* | _ -> *)
-
     (* end *)
+    
+let caml_fresh_oo_id args = 
+  E.runtime_call Js_runtime_modules.exceptions "caml_fresh_oo_id" args 

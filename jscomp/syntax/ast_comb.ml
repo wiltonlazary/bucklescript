@@ -25,17 +25,14 @@
 
 open Ast_helper 
 
-let exp_apply_no_label ?loc ?attrs a b = 
-  Exp.apply ?loc ?attrs a (Ext_list.map (fun x -> "", x) b)
 
-let fun_no_label ?loc ?attrs  pat body = 
-  Exp.fun_ ?loc ?attrs "" None pat body
 
-let arrow_no_label ?loc ?attrs b c = 
-  Typ.arrow ?loc ?attrs "" b c 
+(* let fun_no_label ?loc ?attrs  pat body = 
+  Ast_compatible.fun_ ?loc ?attrs  pat body *)
+
 
 let discard_exp_as_unit loc e = 
-  exp_apply_no_label ~loc     
+  Ast_compatible.apply_simple ~loc     
     (Exp.ident ~loc {txt = Ast_literal.Lid.ignore_id; loc})
     [Exp.constraint_ ~loc e 
        (Ast_literal.type_unit ~loc ())]
@@ -48,7 +45,7 @@ let tuple_type_pair ?loc kind arity =
     match kind with 
     | `Run -> ty,  [], ty 
     | `Make -> 
-      (Typ.arrow "" ?loc
+      (Ast_compatible.arrow ?loc
          (Ast_literal.type_unit ?loc ())
          ty ,
        [], ty)
@@ -59,7 +56,7 @@ let tuple_type_pair ?loc kind arity =
       )  in
     match tys with 
     | result :: rest -> 
-      Ext_list.reduce_from_left (fun r arg -> Typ.arrow "" ?loc arg r) tys, 
+      Ext_list.reduce_from_left tys (fun r arg -> Ast_compatible.arrow ?loc arg r) , 
       List.rev rest , result
     | [] -> assert false
     

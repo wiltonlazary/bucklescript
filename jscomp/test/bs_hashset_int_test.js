@@ -97,7 +97,7 @@ var histo = Belt_HashSetInt.getBucketHistogram(h);
 
 b("File \"bs_hashset_int_test.ml\", line 62, characters 4-11", histo.length <= 10);
 
-Mt.from_pair_suites("bs_hashset_int_test.ml", suites[0]);
+Mt.from_pair_suites("Bs_hashset_int_test", suites[0]);
 
 var N = 0;
 

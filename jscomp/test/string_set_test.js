@@ -13,7 +13,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -33,7 +33,7 @@ for(var i = 0; i <= 99999; ++i){
 
 eq("File \"string_set_test.ml\", line 16, characters 5-12", String_set.cardinal(s), 100000);
 
-Mt.from_pair_suites("string_set_test.ml", suites[0]);
+Mt.from_pair_suites("String_set_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

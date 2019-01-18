@@ -1,7 +1,7 @@
 'use strict';
 
 var Mt = require("./mt.js");
-var Js_primitive = require("../../lib/js/js_primitive.js");
+var Caml_option = require("../../lib/js/caml_option.js");
 
 var suites = /* record */[/* contents : [] */0];
 
@@ -15,11 +15,11 @@ function b(loc, b$1) {
   return Mt.bool_suites(test_id, suites, loc, b$1);
 }
 
-function makeWrapper(foo, _) {
+function makeWrapper(foo, param) {
   var tmp = { };
   if (foo !== undefined) {
     tmp.foo = (function () {
-          switch (Js_primitive.valFromOption(foo)) {
+          switch (Caml_option.valFromOption(foo)) {
             case 97 : 
                 return "a";
             case 98 : 
@@ -32,7 +32,7 @@ function makeWrapper(foo, _) {
   return /* () */0;
 }
 
-function makeWrapper2(foo, _) {
+function makeWrapper2(foo, param) {
   console.log({
         foo: (function () {
               switch (foo) {
@@ -49,12 +49,12 @@ function makeWrapper2(foo, _) {
 
 makeWrapper2(/* a */97, /* () */0);
 
-function makeWrapper3(foo, _) {
+function makeWrapper3(foo, param) {
   console.log(2);
   var tmp = { };
   if (foo !== undefined) {
     tmp.foo = (function () {
-          switch (Js_primitive.valFromOption(foo)) {
+          switch (Caml_option.valFromOption(foo)) {
             case 97 : 
                 return "a";
             case 98 : 
@@ -66,7 +66,7 @@ function makeWrapper3(foo, _) {
   return tmp;
 }
 
-function makeWrapper4(foo, _) {
+function makeWrapper4(foo, param) {
   console.log(2);
   var tmp = { };
   var tmp$1 = foo > 100 ? undefined : (
@@ -74,7 +74,7 @@ function makeWrapper4(foo, _) {
     );
   if (tmp$1 !== undefined) {
     tmp.foo = (function () {
-          switch (Js_primitive.valFromOption(tmp$1)) {
+          switch (Caml_option.valFromOption(tmp$1)) {
             case 97 : 
                 return "a";
             case 98 : 
@@ -96,7 +96,7 @@ b("File \"gpr_2503_test.ml\", line 40, characters 5-12", "b" === makeWrapper4(11
 
 b("File \"gpr_2503_test.ml\", line 43, characters 5-12", undefined === makeWrapper4(111, /* () */0).foo);
 
-Mt.from_pair_suites("gpr_2503_test.ml", suites[0]);
+Mt.from_pair_suites("Gpr_2503_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

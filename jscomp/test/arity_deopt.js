@@ -13,7 +13,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -59,7 +59,7 @@ eq("File \"arity_deopt.ml\", line 48, characters 15-22", 6, (function (y, z) {
           return (1 + y | 0) + z | 0;
         })(2, 3));
 
-Mt.from_pair_suites("arity_deopt.ml", suites[0]);
+Mt.from_pair_suites("Arity_deopt", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

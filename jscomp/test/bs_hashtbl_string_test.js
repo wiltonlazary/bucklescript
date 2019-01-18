@@ -16,7 +16,7 @@ function hash_string(s) {
   return Caml_hash_primitive.caml_hash_final_mix(Caml_hash_primitive.caml_hash_mix_string(0, s));
 }
 
-var hashString = function (str){ {
+function hashString (str){ 
                                               var hash = 5381,
                                               i    = str.length | 0;
 
@@ -24,7 +24,7 @@ var hashString = function (str){ {
                                               hash = (hash * 33) ^ str.charCodeAt(--i);
                                               }
                                               return hash
-                                              }
+                                              
                                             };
 
 var $$String = Belt_Id.hashable(Hashtbl.hash, (function (x, y) {
@@ -47,7 +47,7 @@ var Int = Belt_Id.hashable(Hashtbl.hash, (function (x, y) {
 
 var empty = Belt_HashMap.make(500000, Int);
 
-function bench() {
+function bench(param) {
   for(var i = 0; i <= 1000000; ++i){
     Belt_HashMap.set(empty, i, i);
   }
@@ -144,7 +144,7 @@ function bench3(m) {
 
 var Sx = Belt_Id.comparable(Caml_primitive.caml_string_compare);
 
-function bench4() {
+function bench4(param) {
   var table = Belt_internalBucketsType.make(/* () */0, /* () */0, 1000000);
   for(var i = 0; i <= 1000000; ++i){
     Belt_HashMapString.set(table, String(i), i);
@@ -179,14 +179,14 @@ function bench4() {
   }
 }
 
-function bench5() {
+function bench5(param) {
   var table = Belt_HashMap.make(1000000, Int);
-  console.time("bs_hashtbl_string_test.ml 133");
+  console.time("test/bs_hashtbl_string_test.ml 133");
   for(var i = 0; i <= 1000000; ++i){
     Belt_HashMap.set(table, i, i);
   }
-  console.timeEnd("bs_hashtbl_string_test.ml 133");
-  console.time("bs_hashtbl_string_test.ml 137");
+  console.timeEnd("test/bs_hashtbl_string_test.ml 133");
+  console.time("test/bs_hashtbl_string_test.ml 137");
   for(var i$1 = 0; i$1 <= 1000000; ++i$1){
     if (!Belt_HashMap.has(table, i$1)) {
       throw [
@@ -200,12 +200,12 @@ function bench5() {
     }
     
   }
-  console.timeEnd("bs_hashtbl_string_test.ml 137");
-  console.time("bs_hashtbl_string_test.ml 141");
+  console.timeEnd("test/bs_hashtbl_string_test.ml 137");
+  console.time("test/bs_hashtbl_string_test.ml 141");
   for(var i$2 = 0; i$2 <= 1000000; ++i$2){
     Belt_HashMap.remove(table, i$2);
   }
-  console.timeEnd("bs_hashtbl_string_test.ml 141");
+  console.timeEnd("test/bs_hashtbl_string_test.ml 141");
   if (Belt_HashMap.isEmpty(table)) {
     return 0;
   } else {
@@ -220,7 +220,7 @@ function bench5() {
   }
 }
 
-function bench6() {
+function bench6(param) {
   var table = Belt_internalBucketsType.make(/* () */0, /* () */0, 1000000);
   for(var i = 0; i <= 1000000; ++i){
     Belt_HashMapInt.set(table, i, i);
@@ -255,7 +255,7 @@ function bench6() {
   }
 }
 
-function bench7() {
+function bench7(param) {
   var hintSize = 2000000;
   var table = Belt_internalBucketsType.make(/* () */0, /* () */0, hintSize);
   for(var i = 0; i <= 1000000; ++i){
@@ -291,11 +291,11 @@ function bench7() {
   }
 }
 
-console.time("bs_hashtbl_string_test.ml 203");
+console.time("test/bs_hashtbl_string_test.ml 203");
 
 bench7(/* () */0);
 
-console.timeEnd("bs_hashtbl_string_test.ml 203");
+console.timeEnd("test/bs_hashtbl_string_test.ml 203");
 
 var N = 0;
 

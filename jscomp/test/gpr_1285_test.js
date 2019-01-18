@@ -15,7 +15,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -39,27 +39,33 @@ var class_tables$1 = [
   0
 ];
 
-function step1() {
+function step1(param) {
   if (!class_tables[0]) {
     var $$class = CamlinternalOO.create_table(["step2"]);
+    var env = CamlinternalOO.new_variable($$class, "");
     var step2 = CamlinternalOO.get_method_label($$class, "step2");
-    CamlinternalOO.set_method($$class, step2, (function () {
+    CamlinternalOO.set_method($$class, step2, (function (self$1) {
             if (!class_tables$1[0]) {
               var $$class = CamlinternalOO.create_table(["step3"]);
+              var env = CamlinternalOO.new_variable($$class, "");
               var step3 = CamlinternalOO.get_method_label($$class, "step3");
-              CamlinternalOO.set_method($$class, step3, (function () {
+              CamlinternalOO.set_method($$class, step3, (function (self$2) {
                       return 33;
                     }));
-              var env_init = function () {
-                return CamlinternalOO.create_object_opt(0, $$class);
+              var env_init = function (env$1) {
+                var self = CamlinternalOO.create_object_opt(0, $$class);
+                self[env] = env$1;
+                return self;
               };
               CamlinternalOO.init_class($$class);
               class_tables$1[0] = env_init;
             }
             return Curry._1(class_tables$1[0], 0);
           }));
-    var env_init = function () {
-      return CamlinternalOO.create_object_opt(0, $$class);
+    var env_init = function (env$1) {
+      var self = CamlinternalOO.create_object_opt(0, $$class);
+      self[env] = env$1;
+      return self;
     };
     CamlinternalOO.init_class($$class);
     class_tables[0] = env_init;
@@ -75,7 +81,7 @@ var x = Caml_oo_curry.js1(68057959, 2, tmp$1);
 
 eq("File \"gpr_1285_test.ml\", line 20, characters 5-12", x, 33);
 
-Mt.from_pair_suites("gpr_1285_test.ml", suites[0]);
+Mt.from_pair_suites("Gpr_1285_test", suites[0]);
 
 exports.suites = suites;
 exports.test_id = test_id;

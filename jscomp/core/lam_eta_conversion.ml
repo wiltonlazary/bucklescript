@@ -38,8 +38,8 @@
 let transform_under_supply n loc status fn args = 
   let extra_args = Ext_list.init n
       (fun _ ->   (Ident.create Literals.param)) in
-  let extra_lambdas = Ext_list.map (fun x -> Lam.var x) extra_args in
-  begin match Ext_list.fold_right (fun (lam : Lam.t) (acc, bind) ->
+  let extra_lambdas = Ext_list.map  extra_args Lam.var in
+  begin match Ext_list.fold_right (fn::args) ([],[])  (fun (lam : Lam.t) (acc, bind) ->
       match lam with
       | Lvar _
       | Lconst (Const_int _  
@@ -55,7 +55,7 @@ let transform_under_supply n loc status fn args =
       | _ ->
         let v = Ident.create Literals.partial_arg in
         (Lam.var v :: acc),  ((v, lam) :: bind)
-    ) (fn::args) ([],[])   with 
+    )   with 
   | fn :: args, [] -> 
     (* More than no side effect in the [args], 
        we try to avoid computation, so even if 
@@ -65,7 +65,7 @@ let transform_under_supply n loc status fn args =
        But it is dangerous to change the arity 
        of an existing function which may cause inconsistency
     *)
-    Lam.function_ ~arity:n ~function_kind:Curried ~params:extra_args
+    Lam.function_ ~arity:n  ~params:extra_args
       ~body:(Lam.apply fn (Ext_list.append args  extra_lambdas) 
                loc 
                status
@@ -73,7 +73,7 @@ let transform_under_supply n loc status fn args =
   | fn::args , bindings ->
 
     let rest : Lam.t = 
-      Lam.function_ ~arity:n ~function_kind:Curried ~params:extra_args
+      Lam.function_ ~arity:n  ~params:extra_args
         ~body:(Lam.apply fn (Ext_list.append args  extra_lambdas) 
                  loc 
                  status
@@ -170,8 +170,8 @@ let transform_under_supply n loc status fn args =
                        Location.none App_na
                        fn  [] )
               (* let extra_args = Ext_list.init (arity - len) (fun _ ->   (Ident.create Literals.param)) in *)
-              (* let extra_lambdas = Ext_list.map (fun x -> Lambda.Lvar x) extra_args in *)
-              (* Lambda.Lfunction (kind, Ext_list.append extra_args  args , body ) *)
+              (* let extra_lambdas = Ext_list.map (fun x -> Lam.var x) extra_args in *)
+              (* Lam.Lfunction (kind, Ext_list.append extra_args  args , body ) *)
 
                                 | _ -> 
                                 compile_lambda cxt 
@@ -195,7 +195,7 @@ let unsafe_adjust_to_arity loc ~to_:(to_:int) ?from
       else if to_ = 0 then  
         match fn with 
         | Lfunction{params = [param]; body} -> 
-          Lam.function_ ~arity:0 ~function_kind:Curried 
+          Lam.function_ ~arity:0 
             ~params:[]
             ~body:(
               Lam.let_ Alias param Lam.unit body  
@@ -216,7 +216,7 @@ let unsafe_adjust_to_arity loc ~to_:(to_:int) ?from
 
           let cont = Lam.function_ 
               ~arity:0
-              ~function_kind:Curried 
+              
               ~params:[]
               ~body:(
                 Lam.apply new_fn [Lam.unit ; Lam.unit ] loc App_na
@@ -229,16 +229,15 @@ let unsafe_adjust_to_arity loc ~to_:(to_:int) ?from
 
       else if to_ > from then 
         match fn with 
-        | Lfunction{params;body; function_kind} -> 
+        | Lfunction{params;body} -> 
           (* {[fun x -> f]} -> 
              {[ fun x y -> f y ]}
           *)
           let extra_args = Ext_list.init (to_ - from) (fun _ -> Ident.create Literals.param) in 
           Lam.function_
             ~arity:to_ 
-            ~function_kind:Curried
             ~params:(Ext_list.append params  extra_args )
-            ~body:(Lam.apply body (Ext_list.map Lam.var extra_args) loc App_na)
+            ~body:(Lam.apply body (Ext_list.map extra_args Lam.var) loc App_na)
         | _ -> 
           let arity = to_ in 
           let extra_args = Ext_list.init to_  (fun _ -> Ident.create Literals.param ) in 
@@ -254,11 +253,11 @@ let unsafe_adjust_to_arity loc ~to_:(to_:int) ?from
           let cont = 
             Lam.function_ 
               ~arity
-              ~function_kind:Curried
+              
               ~params:extra_args 
               ~body:(
-                let first_args, rest_args = Ext_list.split_at from extra_args in 
-                Lam.apply (Lam.apply new_fn (Ext_list.map Lam.var first_args) loc App_ml_full) (Ext_list.map Lam.var rest_args) loc App_na ) in 
+                let first_args, rest_args = Ext_list.split_at extra_args from in 
+                Lam.apply (Lam.apply new_fn (Ext_list.map first_args  Lam.var) loc App_ml_full) (Ext_list.map rest_args Lam.var) loc App_na ) in 
           begin match wrapper with 
             | None -> cont 
             | Some partial_arg -> 
@@ -275,17 +274,17 @@ let unsafe_adjust_to_arity loc ~to_:(to_:int) ?from
         begin match fn with 
 
           | Lfunction 
-              {params; body; function_kind } (* TODO check arity = List.length params in debug mode *)
+              {params; body; } (* TODO check arity = List.length params in debug mode *)
             -> 
             let arity = to_ in 
-            let extra_outer_args, extra_inner_args = Ext_list.split_at arity params in 
+            let extra_outer_args, extra_inner_args = Ext_list.split_at params arity in 
             Lam.function_ 
               ~arity 
-              ~function_kind:Curried
+              
               ~params:extra_outer_args 
               ~body:(
                 Lam.function_ ~arity:(from - to_)
-                  ~function_kind:Curried ~params:extra_inner_args ~body:body)
+                  ~params:extra_inner_args ~body:body)
           | _
             -> 
             let extra_outer_args = 
@@ -301,16 +300,16 @@ let unsafe_adjust_to_arity loc ~to_:(to_:int) ?from
                 Some partial_arg, Lam.var partial_arg
             in   
             let cont = 
-              Lam.function_ ~arity:to_ ~function_kind:Curried ~params:extra_outer_args 
+              Lam.function_ ~arity:to_ ~params:extra_outer_args 
                 ~body:(
                   let arity = from - to_ in 
                   let extra_inner_args =
                     Ext_list.init arity (fun _ -> Ident.create Literals.param ) in 
-                  Lam.function_ ~arity ~function_kind:Curried ~params:extra_inner_args 
+                  Lam.function_ ~arity ~params:extra_inner_args 
                     ~body:(Lam.apply new_fn 
-                             (Ext_list.map_append 
-                             Lam.var extra_outer_args 
-                             (Ext_list.map Lam.var extra_inner_args) 
+                             (Ext_list.map_append extra_outer_args 
+                             (Ext_list.map extra_inner_args Lam.var) 
+                             Lam.var 
                              )      
                              loc App_ml_full)
                 )  in 
@@ -334,7 +333,7 @@ let unsafe_adjust_to_arity loc ~to_:(to_:int) ?from
 
         let cont = Lam.function_ 
             ~arity:0
-            ~function_kind:Curried 
+            
             ~params:[]
             ~body:(
               Lam.apply new_fn [Lam.unit] loc App_na

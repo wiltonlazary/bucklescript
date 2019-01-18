@@ -48,7 +48,6 @@
 <li><a href="Belt_internalBucketsType.html">Belt_internalBucketsType</a></li>
 <li><a href="Belt_internalMapInt.html">Belt_internalMapInt</a></li>
 <li><a href="Belt_internalMapString.html">Belt_internalMapString</a></li>
-<li><a href="Belt_internalMutableAVLMap.html">Belt_internalMutableAVLMap</a></li>
 <li><a href="Belt_internalSetBuckets.html">Belt_internalSetBuckets</a></li>
 <li><a href="Belt_internalSetInt.html">Belt_internalSetInt</a></li>
 <li><a href="Belt_internalSetString.html">Belt_internalSetString</a></li>
@@ -56,7 +55,6 @@
 <li><a href="Dom_storage.html">Dom_storage</a></li>
 <li><a href="Js.html">Js</a></li>
 <li><a href="Js_array.html">Js_array</a></li>
-<li><a href="Js_boolean.html">Js_boolean</a></li>
 <li><a href="Js_cast.html">Js_cast</a></li>
 <li><a href="Js_console.html">Js_console</a></li>
 <li><a href="Js_date.html">Js_date</a></li>
@@ -65,18 +63,14 @@
 <li><a href="Js_float.html">Js_float</a></li>
 <li><a href="Js_global.html">Js_global</a></li>
 <li><a href="Js_int.html">Js_int</a></li>
-<li><a href="Js_int64.html">Js_int64</a></li>
-<li><a href="Js_internal.html">Js_internal</a></li>
 <li><a href="Js_json.html">Js_json</a></li>
 <li><a href="Js_list.html">Js_list</a></li>
 <li><a href="Js_mapperRt.html">Js_mapperRt</a></li>
 <li><a href="Js_math.html">Js_math</a></li>
-<li><a href="Js_nativeint.html">Js_nativeint</a></li>
 <li><a href="Js_null.html">Js_null</a></li>
 <li><a href="Js_null_undefined.html">Js_null_undefined</a></li>
 <li><a href="Js_obj.html">Js_obj</a></li>
 <li><a href="Js_option.html">Js_option</a></li>
-<li><a href="Js_primitive.html">Js_primitive</a></li>
 <li><a href="Js_promise.html">Js_promise</a></li>
 <li><a href="Js_re.html">Js_re</a></li>
 <li><a href="Js_result.html">Js_result</a></li>
@@ -84,7 +78,6 @@
 <li><a href="Js_typed_array.html">Js_typed_array</a></li>
 <li><a href="Js_types.html">Js_types</a></li>
 <li><a href="Js_undefined.html">Js_undefined</a></li>
-<li><a href="Js_unsafe.html">Js_unsafe</a></li>
 <li><a href="Js_vector.html">Js_vector</a></li>
 <li><a href="Node.html">Node</a></li>
 <li><a href="Node_buffer.html">Node_buffer</a></li>
@@ -125,8 +118,7 @@
 <tr><td><a href="Js.Array.html">Array</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide bindings to Js array<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Belt.Array.html">Array</a> [<a href="Belt.html">Belt</a>]</td>
@@ -152,20 +144,21 @@
                     A stdlib shipped with BuckleScript
 <p>
 
-    This stdlib is still in <i>beta</i> status, but we encourage you to try it out and
-    provide feedback.
+    This stdlib is still in <i>beta</i> but we encourage you to try it out and
+    give us feedback.
 <p>
 
     <b>Motivation </b>
 <p>
 
-    The motivation of creating such library is to provide BuckleScript users a
+    The motivation for creating such library is to provide BuckleScript users a
     better end-to-end user experience, since the original OCaml stdlib was not
-    written with JS platform in mind, below are a list of areas this lib aims to
-    improve: <OL>
-<li>1. Consistency in name convention: camlCase, and arguments order</li>
-<li>2. Exception thrown functions are all suffixed with <i>Exn</i>, e.g, <i>getExn</i></li>
-<li>3. Better performance and smaller code size running on JS platform</li>
+    written with JS in mind. Below is a list of areas this lib aims to
+    improve:
+    <OL>
+<li>Consistency in name convention: camlCase, and arguments order</li>
+<li>Exception thrown functions are all suffixed with <i>Exn</i>, e.g, <i>getExn</i></li>
+<li>Better performance and smaller code size running on JS platform</li>
 </OL>
 
 <p>
@@ -189,19 +182,17 @@
    <b>A special encoding for collection safety</b>
 <p>
 
-   When we create a collection library for a custom data type, take <i>Set</i> for
-   example, suppose its element type is a pair of ints,
-    it needs a custom <i>compare</i> function. However, the <i>Set</i> could not
-    just be typed as <code class="code"> Set.t (int * int) </code>,
-    its customized <i>compare</i> function needs to be
-    manifested in the signature, otherwise, if the user create another
-    customized <i>compare</i> function, and the two collection would mix which
-    would result in runtime error.
+   When we create a collection library for a custom data type we need a way to provide a comparator
+   function. Take <i>Set</i> for example, suppose its element type is a pair of ints,
+    it needs a custom <i>compare</i> function that takes two tuples and returns their order.
+    The <i>Set</i> could not just be typed as <code class="code"> Set.t (int * int) </code>, its customized <i>compare</i> function
+    needs to manifest itself in the signature, otherwise, if the user creates another
+    customized <i>compare</i> function, the two collection could mix which would result in runtime error.
 <p>
 
-    The original OCaml stdlib solved the problem using <i>functor</i> which is a big
-    closure in runtime; it makes dead code elimination much harder.
-    We introduced a phantom type to solve the problem
+    The original OCaml stdlib solved the problem using <i>functor</i> which creates a big
+    closure at runtime and makes dead code elimination much harder.
+    We use a phantom type to solve the problem:
 <p>
 
     <pre class="codepre"><code class="code">      module Comparable1 = Belt.Id.MakeComparable(struct
@@ -242,22 +233,22 @@
 <p>
 
     In general, we provide a generic collection module, but also create specialized
-    modules for commonly used data type, take <i>Belt.Set</i> for example
+    modules for commonly used data type. Take <i>Belt.Set</i> for example, we provide:
 <p>
 
-    <pre class="codepre"><code class="code">      Belt.Set
-      Belt.Set.Int
-      Belt.Set.String
+    <pre class="codepre"><code class="code">        Belt.Set
+        Belt.Set.Int
+        Belt.Set.String
     </code></pre>
 <p>
 
-    The specialized module <i>Belt.Set.Int</i>, <i>Belt.Set.String</i> is in general more
+    The specialized modules <i>Belt.Set.Int</i>, <i>Belt.Set.String</i> are in general more
     efficient.
 <p>
 
     Currently, both <i>Belt_Set</i> and <i>Belt.Set</i> are accessible to users for some
     technical reasons,
-    we <b>strongly recommend</b> users stick to qualified import, <i>Belt.Sort</i>, we may hide
+    we <b>strongly recommend</b> users stick to qualified import, <i>Belt.Set</i>, we may hide
     the internal, <i>i.e</i>, <i>Belt_Set</i> in the future<br>
  
                 </div>
@@ -265,7 +256,7 @@
 <tr><td><a href="Belt_Array.html">Belt_Array</a> </td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    <a href="Belt.Array.html"><code class="code">Belt.Array</code></a>    
+                    <a href="Belt.Array.html"><code class="code">Belt.Array</code></a>
     Utililites for Array functions<br>
  
                 </div>
@@ -728,12 +719,6 @@
                      
                 </div>
                 </div> </td></tr>
-<tr><td><a href="Belt_internalMutableAVLMap.html">Belt_internalMutableAVLMap</a> </td>
-<td> <div class="info">                     
-                <div class="not-examples">
-                     
-                </div>
-                </div> </td></tr>
 <tr><td><a href="Belt_internalSetBuckets.html">Belt_internalSetBuckets</a> </td>
 <td> <div class="info">                     
                 <div class="not-examples">
@@ -750,13 +735,6 @@
 <td> <div class="info">                     
                 <div class="not-examples">
                      
-                </div>
-                </div> </td></tr>
-<tr><td><a href="Js.Boolean.html">Boolean</a> [<a href="Js.html">Js</a>]</td>
-<td> <div class="info">                     
-                <div class="not-examples">
-                    Provide utilities for <a href="Js.html#TYPEboolean"><code class="code">Js.boolean</code></a><br>
- 
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Node.Buffer.html">Buffer</a> [<a href="Node.html">Node</a>]</td>
@@ -800,8 +778,7 @@
 <tr><td><a href="Js.Date.html">Date</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide bindings for JS Date<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Belt.Debug.html">Debug</a> [<a href="Belt.html">Belt</a>]</td>
@@ -817,8 +794,7 @@
 <tr><td><a href="Js.Dict.html">Dict</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities for JS dictionary object<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Belt_Map.Dict.html">Dict</a> [<a href="Belt_Map.html">Belt_Map</a>]</td>
@@ -858,15 +834,14 @@
 <tr><td><a href="Js.Exn.html">Exn</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities for dealing with Js exceptions<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td align="left"><br>F</td></tr>
 <tr><td><a href="Js.Float.html">Float</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities for JS float<br>
+                    Provide utilities for manipulating JS types<br>
  
                 </div>
                 </div> </td></tr>
@@ -904,8 +879,7 @@
 <tr><td><a href="Js.Global.html">Global</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide bindings to JS global functions in global namespace<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td align="left"><br>H</td></tr>
@@ -957,7 +931,7 @@
 <tr><td><a href="Js.Int.html">Int</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities for int<br>
+                    Provide utilities for JS float<br>
  
                 </div>
                 </div> </td></tr>
@@ -1043,7 +1017,7 @@
 <tr><td><a href="Js.html">Js</a> </td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    This library provides bindings and necessary support for JS FFI. 
+                    This library provides bindings and necessary support for JS FFI.
     It contains all bindings into <code class="code">Js</code> namespace.<br>
  
                 </div>
@@ -1052,13 +1026,6 @@
 <td> <div class="info">                     
                 <div class="not-examples">
                     JavaScript Array API<br>
- 
-                </div>
-                </div> </td></tr>
-<tr><td><a href="Js_boolean.html">Js_boolean</a> </td>
-<td> <div class="info">                     
-                <div class="not-examples">
-                    Contains functions for dealing with JavaScript booleans<br>
  
                 </div>
                 </div> </td></tr>
@@ -1110,7 +1077,7 @@
 <tr><td><a href="Js_exn.html">Js_exn</a> </td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Used by the compiler internally<br>
+                    internal use only<br>
  
                 </div>
                 </div> </td></tr>
@@ -1133,19 +1100,6 @@
 <td> <div class="info">                     
                 <div class="not-examples">
                     Provides functions for inspecting and manipulating <code class="code">int</code>s<br>
- 
-                </div>
-                </div> </td></tr>
-<tr><td><a href="Js_int64.html">Js_int64</a> </td>
-<td> <div class="info">                     
-                <div class="not-examples">
-                     
-                </div>
-                </div> </td></tr>
-<tr><td><a href="Js_internal.html">Js_internal</a> </td>
-<td> <div class="info">                     
-                <div class="not-examples">
-                    Internal types which are used to support uncurry and method,         they are not supposed to be exposed to external users<br>
  
                 </div>
                 </div> </td></tr>
@@ -1179,12 +1133,6 @@
  
                 </div>
                 </div> </td></tr>
-<tr><td><a href="Js_nativeint.html">Js_nativeint</a> </td>
-<td> <div class="info">                     
-                <div class="not-examples">
-                     
-                </div>
-                </div> </td></tr>
 <tr><td><a href="Js_null.html">Js_null</a> </td>
 <td> <div class="info">                     
                 <div class="not-examples">
@@ -1207,12 +1155,6 @@
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Js_option.html">Js_option</a> </td>
-<td> <div class="info">                     
-                <div class="not-examples">
-                     
-                </div>
-                </div> </td></tr>
-<tr><td><a href="Js_primitive.html">Js_primitive</a> </td>
 <td> <div class="info">                     
                 <div class="not-examples">
                      
@@ -1277,12 +1219,6 @@ and subsequent uses will ocntinue the search from the previous <a href="Js_re.ht
  
                 </div>
                 </div> </td></tr>
-<tr><td><a href="Js_unsafe.html">Js_unsafe</a> </td>
-<td> <div class="info">                     
-                <div class="not-examples">
-                     
-                </div>
-                </div> </td></tr>
 <tr><td><a href="Js_vector.html">Js_vector</a> </td>
 <td> <div class="info">                     
                 <div class="not-examples">
@@ -1293,16 +1229,14 @@ and subsequent uses will ocntinue the search from the previous <a href="Js_re.ht
 <tr><td><a href="Js.Json.html">Json</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities for json<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td align="left"><br>L</td></tr>
 <tr><td><a href="Js.List.html">List</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities for list<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Belt.List.html">List</a> [<a href="Belt.html">Belt</a>]</td>
@@ -1361,8 +1295,7 @@ and subsequent uses will ocntinue the search from the previous <a href="Js_re.ht
 <tr><td><a href="Js.Math.html">Math</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide bindings for JS <code class="code">Math</code> object<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Node.Module.html">Module</a> [<a href="Node.html">Node</a>]</td>
@@ -1497,8 +1430,7 @@ and subsequent uses will ocntinue the search from the previous <a href="Js_re.ht
 <tr><td><a href="Js.Null.html">Null</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities around <code class="code">'a null</code><br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Js.Null_undefined.html">Null_undefined</a> [<a href="Js.html">Js</a>]</td>
@@ -1510,23 +1442,20 @@ and subsequent uses will ocntinue the search from the previous <a href="Js_re.ht
 <tr><td><a href="Js.Nullable.html">Nullable</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities around <a href="Js.html#TYPEnull_undefined"><code class="code">Js.null_undefined</code></a><br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td align="left"><br>O</td></tr>
 <tr><td><a href="Js.Obj.html">Obj</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities for <a href="Js.html#TYPEt"><code class="code">Js.t</code></a><br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Js.Option.html">Option</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities for option<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Belt.Option.html">Option</a> [<a href="Belt.html">Belt</a>]</td>
@@ -1555,8 +1484,7 @@ and subsequent uses will ocntinue the search from the previous <a href="Js_re.ht
 <tr><td><a href="Js.Promise.html">Promise</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide bindings to JS promise<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td align="left"><br>R</td></tr>
@@ -1573,15 +1501,13 @@ and subsequent uses will ocntinue the search from the previous <a href="Js_re.ht
 <tr><td><a href="Js.Re.html">Re</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide bindings to Js regex expression<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Js.Result.html">Result</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Define the interface for result<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Belt.Result.html">Result</a> [<a href="Belt.html">Belt</a>]</td>
@@ -1656,8 +1582,7 @@ and subsequent uses will ocntinue the search from the previous <a href="Js_re.ht
 <tr><td><a href="Js.String.html">String</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide bindings to JS string<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Belt_HashMap.String.html">String</a> [<a href="Belt_HashMap.html">Belt_HashMap</a>]</td>
@@ -1718,15 +1643,13 @@ and subsequent uses will ocntinue the search from the previous <a href="Js_re.ht
 <tr><td><a href="Js.Typed_array.html">Typed_array</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide bindings for JS typed array<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td><a href="Js.Types.html">Types</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities for manipulating JS types<br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td align="left"><br>U</td></tr>
@@ -1757,8 +1680,7 @@ and subsequent uses will ocntinue the search from the previous <a href="Js_re.ht
 <tr><td><a href="Js.Undefined.html">Undefined</a> [<a href="Js.html">Js</a>]</td>
 <td> <div class="info">                     
                 <div class="not-examples">
-                    Provide utilities around <a href="Js.html#VALundefined"><code class="code">Js.undefined</code></a><br>
- 
+                     
                 </div>
                 </div> </td></tr>
 <tr><td align="left"><br>V</td></tr>

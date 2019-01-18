@@ -62,7 +62,7 @@ function to_list(s) {
 
 var suites_000 = /* tuple */[
   "lexer_stream_genlex",
-  (function () {
+  (function (param) {
       return /* Eq */Block.__(0, [
                 /* :: */[
                   /* Int */Block.__(2, [3]),
@@ -96,7 +96,7 @@ var suites = /* :: */[
   /* [] */0
 ];
 
-Mt.from_pair_suites("genlex_test.ml", suites);
+Mt.from_pair_suites("Genlex_test", suites);
 
 exports.lexer = lexer;
 exports.to_list = to_list;

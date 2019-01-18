@@ -31,8 +31,9 @@
 val caml_set_oo_id :
   Caml_builtin_exceptions.exception_block -> Caml_builtin_exceptions.exception_block
 
-val get_id : unit -> nativeint
+val caml_fresh_oo_id : 
+  unit -> nativeint
 
 val create : string -> Caml_builtin_exceptions.exception_block
 (* val makeExtension : string -> Caml_builtin_exceptions.exception_block *)
-val isCamlExceptionOrOpenVariant : 'a -> bool
+val caml_is_extension : 'a -> bool

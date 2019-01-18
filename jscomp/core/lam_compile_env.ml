@@ -57,7 +57,7 @@ type env_value =
 
 
 type ident_info = {
-  id : Ident.t;
+  (* id : Ident.t; *)
   name : string;
   signature : Ocaml_types.t;
   arity : Js_cmj_format.arity; 
@@ -119,49 +119,38 @@ let add_js_module
 
 let (+>) = Lam_module_ident.Hash.add cached_tbl
 
-let cached_find_ml_id_pos id pos env : ident_info =
-  let oid  = Lam_module_ident.of_ml id in
+let cached_find_ml_id_pos (module_id : Ident.t) (pos : int) env : ident_info =
+  let oid  = Lam_module_ident.of_ml module_id in
   match Lam_module_ident.Hash.find_opt cached_tbl oid with 
   | None -> 
     let cmj_path, cmj_table = 
-      Js_cmj_load.find_cmj (id.name ^ Literals.suffix_cmj) in
+      Js_cmj_load.find_cmj (module_id.name ^ Literals.suffix_cmj) in
     begin match
-        Ocaml_types.find_serializable_signatures_by_path id env with 
+        Ocaml_types.find_serializable_signatures_by_path module_id env with 
     | None -> 
       assert false (*TODO: more informative error message *)
     | Some signature -> 
       oid  +> Visit {signature;  cmj_table ; cmj_path  }  ;
       let name =  Ocaml_types.get_name signature pos  in
       let arity, closed_lambda =        
-        match String_map.find_opt name cmj_table.values with
-        | Some {arity ; closed_lambda} -> 
-          arity, 
-          ( if Js_config.get_cross_module_inline () then
-              closed_lambda
-            else None
-          )
-        | None -> Js_cmj_format.single_na, None 
+        Js_cmj_format.query_by_name cmj_table name         
       in
-      {id; 
+      {
+       (* id;  *)
        name ;
        signature ;
        arity ;
        closed_lambda
       }
     end
-  | Some (Visit {signature ; cmj_table = { values ; _} } )
+  | Some (Visit {signature ; cmj_table } )
     -> 
     let name = Ocaml_types.get_name signature pos  in
     let arity , closed_lambda =  
-      match  String_map.find_opt name values with
-      | Some {arity; closed_lambda;_} -> 
-        arity, 
-        if Js_config.get_cross_module_inline () then
-          closed_lambda 
-        else None 
-      | None -> Js_cmj_format.single_na, None
+      Js_cmj_format.query_by_name cmj_table name 
     in
-    { id;
+    { 
+      (* id; *)
       name; 
       signature;
       arity;
@@ -185,9 +174,12 @@ type _ t =
   | Has_env : Env.t  -> module_info t 
 
 
-let query_and_add_if_not_exist (type u)
+(* -FIXME: 
+  Here [not_found] only means cmi not found, not cmj not found *)
+let query_and_add_if_not_exist 
+    (type u)
     (oid : Lam_module_ident.t) 
-    (env : u t) ~not_found ~found:(found : u -> _) =
+    (env : u t) ~not_found ~(found: u -> _) =
   match Lam_module_ident.Hash.find_opt cached_tbl oid with 
   | None -> 
     begin match oid.kind with
@@ -195,28 +187,27 @@ let query_and_add_if_not_exist (type u)
         let (cmj_path, cmj_table) as cmj_info = 
           Js_cmj_load.find_cmj (Lam_module_ident.name oid ^ Literals.suffix_cmj) in           
         oid +> Runtime (true,cmj_path,cmj_table) ; 
-        begin match env with 
+         (match env with 
           | Has_env _ -> 
             found {signature = Ocaml_types.empty; pure = true}
           | No_env -> 
-            found cmj_info
-        end
+            found cmj_info)        
       | Ml 
         -> 
         let (cmj_path, cmj_table) as cmj_info = 
           Js_cmj_load.find_cmj (Lam_module_ident.name oid ^ Literals.suffix_cmj) in           
-        begin match env with 
+        ( match env with 
           | Has_env env -> 
             begin match 
                 Ocaml_types.find_serializable_signatures_by_path  oid.id env with 
             | None -> not_found () (* actually when [not_found] in the call site, we throw... *)
             | Some signature -> 
               oid +> Visit {signature; cmj_table;cmj_path } ;
-              found  { signature ; pure = (cmj_table.effect = None)} 
+              found  { signature ; pure = Js_cmj_format.is_pure cmj_table} 
             end
           | No_env -> 
-            found cmj_info
-        end
+            found cmj_info)
+        
 
       | External _  -> 
         oid +> External;
@@ -233,10 +224,10 @@ let query_and_add_if_not_exist (type u)
         end
 
     end
-  | Some (Visit {signature  ; cmj_table =  cmj_table; cmj_path}) -> 
+  | Some (Visit {signature  ; cmj_table; cmj_path}) -> 
     begin match env with 
       | Has_env _ -> 
-        found   { signature; pure = (cmj_table.effect = None)} 
+        found   { signature; pure = Js_cmj_format.is_pure cmj_table} 
       | No_env  -> found (cmj_path,cmj_table)
     end
 
@@ -255,11 +246,6 @@ let query_and_add_if_not_exist (type u)
         found (Ext_string.empty, Js_cmj_format.no_pure_dummy) (* External is okay *)
     end
 
-(* Conservative interface *)
-let is_pure_module id  = 
-  query_and_add_if_not_exist id No_env
-    ~not_found:(fun _ -> false) 
-    ~found:(fun (_,x) -> x.effect = None)
 
 
 
@@ -276,7 +262,8 @@ let get_package_path_from_cmj
       ) 
     ~found:(fun (cmj_path,x) -> 
         Some (cmj_path, 
-              x.npm_package_path, x.cmj_case )
+              Js_cmj_format.get_npm_package_path x, 
+              Js_cmj_format.get_cmj_case x )
       )
 
 
@@ -285,6 +272,13 @@ let add = Lam_module_ident.Hash_set.add
 
 
 
+(* Conservative interface *)
+let is_pure_module (id : Lam_module_ident.t)  = 
+  id.kind = Runtime ||
+  query_and_add_if_not_exist id No_env
+    ~not_found:(fun _ -> false) 
+    ~found:(fun (_,x) -> 
+      Js_cmj_format.is_pure x)
 
 let get_required_modules 
     extras 

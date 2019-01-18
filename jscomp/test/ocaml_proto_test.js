@@ -6,7 +6,6 @@ var List = require("../../lib/js/list.js");
 var Block = require("../../lib/js/block.js");
 var Bytes = require("../../lib/js/bytes.js");
 var Curry = require("../../lib/js/curry.js");
-var Js_exn = require("../../lib/js/js_exn.js");
 var Lexing = require("../../lib/js/lexing.js");
 var Printf = require("../../lib/js/printf.js");
 var $$String = require("../../lib/js/string.js");
@@ -14,11 +13,13 @@ var Parsing = require("../../lib/js/parsing.js");
 var Caml_obj = require("../../lib/js/caml_obj.js");
 var Filename = require("../../lib/js/filename.js");
 var Printexc = require("../../lib/js/printexc.js");
+var Caml_bytes = require("../../lib/js/caml_bytes.js");
 var Pervasives = require("../../lib/js/pervasives.js");
 var Caml_format = require("../../lib/js/caml_format.js");
+var Caml_option = require("../../lib/js/caml_option.js");
 var Caml_string = require("../../lib/js/caml_string.js");
-var Js_primitive = require("../../lib/js/js_primitive.js");
 var Caml_exceptions = require("../../lib/js/caml_exceptions.js");
+var Caml_js_exceptions = require("../../lib/js/caml_js_exceptions.js");
 var Caml_builtin_exceptions = require("../../lib/js/caml_builtin_exceptions.js");
 
 function field($staropt$star, label, number, type_, name) {
@@ -89,7 +90,7 @@ function extend(extend_name, extend_body) {
         ];
 }
 
-function proto(syntax, file_option, $$package, $$import, message, $$enum, proto$1, extend, _) {
+function proto(syntax, file_option, $$package, $$import, message, $$enum, proto$1, extend, param) {
   var proto$2 = proto$1 !== undefined ? proto$1 : /* record */[
       /* syntax */syntax,
       /* imports : [] */0,
@@ -298,7 +299,7 @@ function string_fold_lefti(f, e0, s) {
 
 function option_default(x, param) {
   if (param !== undefined) {
-    return Js_primitive.valFromOption(param);
+    return Caml_option.valFromOption(param);
   } else {
     return x;
   }
@@ -698,7 +699,7 @@ Printexc.register_printer((function (exn) {
         
       }));
 
-function invalid_default_value(field_name, info, _) {
+function invalid_default_value(field_name, info, param) {
   throw [
         Compilation_error,
         /* Invalid_default_value */Block.__(2, [/* record */[
@@ -708,7 +709,7 @@ function invalid_default_value(field_name, info, _) {
       ];
 }
 
-function unsupported_field_type(field_name, field_type, backend_name, _) {
+function unsupported_field_type(field_name, field_type, backend_name, param) {
   throw [
         Compilation_error,
         /* Unsupported_field_type */Block.__(3, [/* record */[
@@ -770,7 +771,7 @@ var yytransl_block = /* array */[
 ];
 
 var yyact = /* array */[
-  (function () {
+  (function (param) {
       throw [
             Caml_builtin_exceptions.failure,
             "parser"
@@ -950,7 +951,7 @@ var yyact = /* array */[
   (function (__caml_parser_env) {
       return /* Message_extension */Block.__(5, [Parsing.peek_val(__caml_parser_env, 0)]);
     }),
-  (function () {
+  (function (__caml_parser_env) {
       throw [
             Compilation_error,
             /* Syntax_error */0
@@ -1036,7 +1037,7 @@ var yyact = /* array */[
             /* Missing_one_of_name */Block.__(12, [_1])
           ];
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return /* [] */0;
     }),
   (function (__caml_parser_env) {
@@ -1120,63 +1121,63 @@ var yyact = /* array */[
   (function (__caml_parser_env) {
       return Parsing.peek_val(__caml_parser_env, 0)[1];
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "required";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "optional";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "repeated";
     }),
   (function (__caml_parser_env) {
       Parsing.peek_val(__caml_parser_env, 0);
       return "oneof";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "enum";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "package";
     }),
   (function (__caml_parser_env) {
       Parsing.peek_val(__caml_parser_env, 0);
       return "import";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "public";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "option";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "extensions";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "extend";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "syntax";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "message";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "to";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "max";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return "map";
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return /* Required */202657151;
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return /* Repeated */-368609126;
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return /* Optional */-132092992;
     }),
   (function (__caml_parser_env) {
@@ -1189,7 +1190,7 @@ var yyact = /* array */[
   (function (__caml_parser_env) {
       return Parsing.peek_val(__caml_parser_env, 1);
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return /* [] */0;
     }),
   (function (__caml_parser_env) {
@@ -1284,7 +1285,7 @@ var yyact = /* array */[
               /* enum_values */enum_values
             ];
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return /* [] */0;
     }),
   (function (__caml_parser_env) {
@@ -1334,14 +1335,14 @@ var yyact = /* array */[
       var _1 = Parsing.peek_val(__caml_parser_env, 0);
       return invalid_enum_specification(_1[1], _1[0]);
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return /* () */0;
     }),
   (function (__caml_parser_env) {
       Parsing.peek_val(__caml_parser_env, 1);
       return /* () */0;
     }),
-  (function () {
+  (function (__caml_parser_env) {
       return /* () */0;
     }),
   (function (__caml_parser_env) {
@@ -1475,33 +1476,30 @@ function __ocaml_lex_string_rec(_l, lexbuf, ___ocaml_lex_state) {
     var __ocaml_lex_state = ___ocaml_lex_state;
     var l = _l;
     var __ocaml_lex_state$1 = Lexing.engine(__ocaml_lex_tables, __ocaml_lex_state, lexbuf);
-    if (__ocaml_lex_state$1 > 3 || __ocaml_lex_state$1 < 0) {
-      Curry._1(lexbuf[/* refill_buff */0], lexbuf);
-      ___ocaml_lex_state = __ocaml_lex_state$1;
-      continue ;
-    } else {
-      switch (__ocaml_lex_state$1) {
-        case 0 : 
-            var c = Lexing.lexeme_char(lexbuf, 1);
-            ___ocaml_lex_state = 55;
-            _l = /* :: */[
-              Char.escaped(c),
-              l
-            ];
-            continue ;
-        case 1 : 
-            return /* String_value */[$$String.concat("", List.rev(l))];
-        case 2 : 
-            ___ocaml_lex_state = 55;
-            _l = /* :: */[
-              Lexing.lexeme(lexbuf),
-              l
-            ];
-            continue ;
-        case 3 : 
-            return /* String_eof */0;
-        
-      }
+    switch (__ocaml_lex_state$1) {
+      case 0 : 
+          var c = Lexing.lexeme_char(lexbuf, 1);
+          ___ocaml_lex_state = 55;
+          _l = /* :: */[
+            Char.escaped(c),
+            l
+          ];
+          continue ;
+      case 1 : 
+          return /* String_value */[$$String.concat("", List.rev(l))];
+      case 2 : 
+          ___ocaml_lex_state = 55;
+          _l = /* :: */[
+            Lexing.lexeme(lexbuf),
+            l
+          ];
+          continue ;
+      case 3 : 
+          return /* String_eof */0;
+      default:
+        Curry._1(lexbuf[/* refill_buff */0], lexbuf);
+        ___ocaml_lex_state = __ocaml_lex_state$1;
+        continue ;
     }
   };
 }
@@ -1511,26 +1509,23 @@ function __ocaml_lex_comment_rec(_l, lexbuf, ___ocaml_lex_state) {
     var __ocaml_lex_state = ___ocaml_lex_state;
     var l = _l;
     var __ocaml_lex_state$1 = Lexing.engine(__ocaml_lex_tables, __ocaml_lex_state, lexbuf);
-    if (__ocaml_lex_state$1 > 2 || __ocaml_lex_state$1 < 0) {
-      Curry._1(lexbuf[/* refill_buff */0], lexbuf);
-      ___ocaml_lex_state = __ocaml_lex_state$1;
-      continue ;
-    } else {
-      switch (__ocaml_lex_state$1) {
-        case 0 : 
-            update_loc(lexbuf);
-            return /* Comment_value */[$$String.concat("", List.rev(l))];
-        case 1 : 
-            ___ocaml_lex_state = 41;
-            _l = /* :: */[
-              Lexing.lexeme(lexbuf),
-              l
-            ];
-            continue ;
-        case 2 : 
-            return /* Comment_eof */0;
-        
-      }
+    switch (__ocaml_lex_state$1) {
+      case 0 : 
+          update_loc(lexbuf);
+          return /* Comment_value */[$$String.concat("", List.rev(l))];
+      case 1 : 
+          ___ocaml_lex_state = 41;
+          _l = /* :: */[
+            Lexing.lexeme(lexbuf),
+            l
+          ];
+          continue ;
+      case 2 : 
+          return /* Comment_eof */0;
+      default:
+        Curry._1(lexbuf[/* refill_buff */0], lexbuf);
+        ___ocaml_lex_state = __ocaml_lex_state$1;
+        continue ;
     }
   };
 }
@@ -1540,30 +1535,27 @@ function __ocaml_lex_multi_line_comment_rec(_l, lexbuf, ___ocaml_lex_state) {
     var __ocaml_lex_state = ___ocaml_lex_state;
     var l = _l;
     var __ocaml_lex_state$1 = Lexing.engine(__ocaml_lex_tables, __ocaml_lex_state, lexbuf);
-    if (__ocaml_lex_state$1 > 3 || __ocaml_lex_state$1 < 0) {
-      Curry._1(lexbuf[/* refill_buff */0], lexbuf);
-      ___ocaml_lex_state = __ocaml_lex_state$1;
-      continue ;
-    } else {
-      switch (__ocaml_lex_state$1) {
-        case 0 : 
-            update_loc(lexbuf);
-            ___ocaml_lex_state = 47;
-            continue ;
-        case 1 : 
-            Lexing.lexeme(lexbuf);
-            return /* Comment_value */[$$String.concat("", List.rev(l))];
-        case 2 : 
-            ___ocaml_lex_state = 47;
-            _l = /* :: */[
-              Lexing.lexeme(lexbuf),
-              l
-            ];
-            continue ;
-        case 3 : 
-            return /* Comment_eof */0;
-        
-      }
+    switch (__ocaml_lex_state$1) {
+      case 0 : 
+          update_loc(lexbuf);
+          ___ocaml_lex_state = 47;
+          continue ;
+      case 1 : 
+          Lexing.lexeme(lexbuf);
+          return /* Comment_value */[$$String.concat("", List.rev(l))];
+      case 2 : 
+          ___ocaml_lex_state = 47;
+          _l = /* :: */[
+            Lexing.lexeme(lexbuf),
+            l
+          ];
+          continue ;
+      case 3 : 
+          return /* Comment_eof */0;
+      default:
+        Curry._1(lexbuf[/* refill_buff */0], lexbuf);
+        ___ocaml_lex_state = __ocaml_lex_state$1;
+        continue ;
     }
   };
 }
@@ -1574,131 +1566,128 @@ function lexer(lexbuf) {
   while(true) {
     var __ocaml_lex_state = ___ocaml_lex_state;
     var __ocaml_lex_state$1 = Lexing.engine(__ocaml_lex_tables, __ocaml_lex_state, lexbuf$1);
-    if (__ocaml_lex_state$1 > 21 || __ocaml_lex_state$1 < 0) {
-      Curry._1(lexbuf$1[/* refill_buff */0], lexbuf$1);
-      ___ocaml_lex_state = __ocaml_lex_state$1;
-      continue ;
-    } else {
-      switch (__ocaml_lex_state$1) {
-        case 0 : 
-            return /* LBRACE */15;
-        case 1 : 
-            return /* RBRACE */14;
-        case 2 : 
-            return /* LBRACKET */17;
-        case 3 : 
-            return /* RBRACKET */16;
-        case 4 : 
-            return /* RPAREN */18;
-        case 5 : 
-            return /* LPAREN */19;
-        case 6 : 
-            return /* LANGLEB */21;
-        case 7 : 
-            return /* RANGLEB */20;
-        case 8 : 
-            return /* EQUAL */22;
-        case 9 : 
-            return /* SEMICOLON */23;
-        case 10 : 
-            return /* COMMA */24;
-        case 11 : 
-            var match = __ocaml_lex_comment_rec(/* [] */0, lexbuf$1, 41);
-            if (match) {
-              ___ocaml_lex_state = 0;
-              continue ;
-            } else {
-              return /* EOF */25;
-            }
-        case 12 : 
-            var match$1 = __ocaml_lex_multi_line_comment_rec(/* [] */0, lexbuf$1, 47);
-            if (match$1) {
-              ___ocaml_lex_state = 0;
-              continue ;
-            } else {
-              return /* EOF */25;
-            }
-        case 13 : 
-            var match$2 = __ocaml_lex_string_rec(/* [] */0, lexbuf$1, 55);
-            if (match$2) {
-              return /* STRING */Block.__(2, [match$2[0]]);
-            } else {
-              return /* EOF */25;
-            }
-        case 14 : 
-            return /* INT */Block.__(3, [Caml_format.caml_int_of_string(Lexing.lexeme(lexbuf$1))]);
-        case 15 : 
-            return /* FLOAT */Block.__(4, [Caml_format.caml_float_of_string(Lexing.lexeme(lexbuf$1))]);
-        case 16 : 
-            return /* FLOAT */Block.__(4, [Number.NaN]);
-        case 17 : 
-            update_loc(lexbuf$1);
+    switch (__ocaml_lex_state$1) {
+      case 0 : 
+          return /* LBRACE */15;
+      case 1 : 
+          return /* RBRACE */14;
+      case 2 : 
+          return /* LBRACKET */17;
+      case 3 : 
+          return /* RBRACKET */16;
+      case 4 : 
+          return /* RPAREN */18;
+      case 5 : 
+          return /* LPAREN */19;
+      case 6 : 
+          return /* LANGLEB */21;
+      case 7 : 
+          return /* RANGLEB */20;
+      case 8 : 
+          return /* EQUAL */22;
+      case 9 : 
+          return /* SEMICOLON */23;
+      case 10 : 
+          return /* COMMA */24;
+      case 11 : 
+          var match = __ocaml_lex_comment_rec(/* [] */0, lexbuf$1, 41);
+          if (match) {
             ___ocaml_lex_state = 0;
             continue ;
-        case 18 : 
-            ___ocaml_lex_state = 0;
-            continue ;
-        case 19 : 
-            var loc = from_lexbuf(lexbuf$1);
-            var ident = Lexing.lexeme(lexbuf$1);
-            switch (ident) {
-              case "enum" : 
-                  return /* ENUM */4;
-              case "extend" : 
-                  return /* EXTEND */9;
-              case "extensions" : 
-                  return /* EXTENSIONS */8;
-              case "import" : 
-                  return /* IMPORT */Block.__(1, [loc]);
-              case "map" : 
-                  return /* MAP */13;
-              case "max" : 
-                  return /* MAX */12;
-              case "message" : 
-                  return /* MESSAGE */3;
-              case "oneof" : 
-                  return /* ONE_OF */Block.__(0, [loc]);
-              case "option" : 
-                  return /* OPTION */7;
-              case "optional" : 
-                  return /* OPTIONAL */1;
-              case "package" : 
-                  return /* PACKAGE */5;
-              case "public" : 
-                  return /* PUBLIC */6;
-              case "repeated" : 
-                  return /* REPEATED */2;
-              case "required" : 
-                  return /* REQUIRED */0;
-              case "syntax" : 
-                  return /* SYNTAX */10;
-              case "to" : 
-                  return /* TO */11;
-              default:
-                return /* IDENT */Block.__(5, [/* tuple */[
-                            loc,
-                            ident
-                          ]]);
-            }
-        case 20 : 
+          } else {
             return /* EOF */25;
-        case 21 : 
-            var s = Curry._1(Printf.sprintf(/* Format */[
-                      /* String_literal */Block.__(11, [
-                          "Unknown character found ",
-                          /* String */Block.__(2, [
-                              /* No_padding */0,
-                              /* End_of_format */0
-                            ])
-                        ]),
-                      "Unknown character found %s"
-                    ]), Lexing.lexeme(lexbuf$1));
-            throw [
-                  Caml_builtin_exceptions.failure,
-                  s
-                ];
-        
-      }
+          }
+      case 12 : 
+          var match$1 = __ocaml_lex_multi_line_comment_rec(/* [] */0, lexbuf$1, 47);
+          if (match$1) {
+            ___ocaml_lex_state = 0;
+            continue ;
+          } else {
+            return /* EOF */25;
+          }
+      case 13 : 
+          var match$2 = __ocaml_lex_string_rec(/* [] */0, lexbuf$1, 55);
+          if (match$2) {
+            return /* STRING */Block.__(2, [match$2[0]]);
+          } else {
+            return /* EOF */25;
+          }
+      case 14 : 
+          return /* INT */Block.__(3, [Caml_format.caml_int_of_string(Lexing.lexeme(lexbuf$1))]);
+      case 15 : 
+          return /* FLOAT */Block.__(4, [Caml_format.caml_float_of_string(Lexing.lexeme(lexbuf$1))]);
+      case 16 : 
+          return /* FLOAT */Block.__(4, [Number.NaN]);
+      case 17 : 
+          update_loc(lexbuf$1);
+          ___ocaml_lex_state = 0;
+          continue ;
+      case 18 : 
+          ___ocaml_lex_state = 0;
+          continue ;
+      case 19 : 
+          var loc = from_lexbuf(lexbuf$1);
+          var ident = Lexing.lexeme(lexbuf$1);
+          switch (ident) {
+            case "enum" : 
+                return /* ENUM */4;
+            case "extend" : 
+                return /* EXTEND */9;
+            case "extensions" : 
+                return /* EXTENSIONS */8;
+            case "import" : 
+                return /* IMPORT */Block.__(1, [loc]);
+            case "map" : 
+                return /* MAP */13;
+            case "max" : 
+                return /* MAX */12;
+            case "message" : 
+                return /* MESSAGE */3;
+            case "oneof" : 
+                return /* ONE_OF */Block.__(0, [loc]);
+            case "option" : 
+                return /* OPTION */7;
+            case "optional" : 
+                return /* OPTIONAL */1;
+            case "package" : 
+                return /* PACKAGE */5;
+            case "public" : 
+                return /* PUBLIC */6;
+            case "repeated" : 
+                return /* REPEATED */2;
+            case "required" : 
+                return /* REQUIRED */0;
+            case "syntax" : 
+                return /* SYNTAX */10;
+            case "to" : 
+                return /* TO */11;
+            default:
+              return /* IDENT */Block.__(5, [/* tuple */[
+                          loc,
+                          ident
+                        ]]);
+          }
+      case 20 : 
+          return /* EOF */25;
+      case 21 : 
+          var s = Curry._1(Printf.sprintf(/* Format */[
+                    /* String_literal */Block.__(11, [
+                        "Unknown character found ",
+                        /* String */Block.__(2, [
+                            /* No_padding */0,
+                            /* End_of_format */0
+                          ])
+                      ]),
+                    "Unknown character found %s"
+                  ]), Lexing.lexeme(lexbuf$1));
+          throw [
+                Caml_builtin_exceptions.failure,
+                s
+              ];
+      default:
+        Curry._1(lexbuf$1[/* refill_buff */0], lexbuf$1);
+        ___ocaml_lex_state = __ocaml_lex_state$1;
+        continue ;
     }
   };
 }
@@ -1871,7 +1860,7 @@ function string_of_payload_kind(capitalize, payload_kind, packed) {
     s = packed ? "bytes" : "varint";
   }
   if (capitalize !== undefined) {
-    return Caml_string.bytes_to_string(Bytes.capitalize(Caml_string.bytes_of_string(s)));
+    return Caml_bytes.bytes_to_string(Bytes.capitalize(Caml_bytes.bytes_of_string(s)));
   } else {
     return s;
   }
@@ -1896,30 +1885,27 @@ function scope(scope$1, f) {
 }
 
 function indentation_prefix(n) {
-  if (n > 8 || n < 0) {
-    return Caml_string.bytes_to_string(Bytes.make(n, /* " " */32));
-  } else {
-    switch (n) {
-      case 0 : 
-          return "";
-      case 1 : 
-          return "  ";
-      case 2 : 
-          return "    ";
-      case 3 : 
-          return "      ";
-      case 4 : 
-          return "        ";
-      case 5 : 
-          return "          ";
-      case 6 : 
-          return "            ";
-      case 7 : 
-          return "              ";
-      case 8 : 
-          return "                ";
-      
-    }
+  switch (n) {
+    case 0 : 
+        return "";
+    case 1 : 
+        return "  ";
+    case 2 : 
+        return "    ";
+    case 3 : 
+        return "      ";
+    case 4 : 
+        return "        ";
+    case 5 : 
+        return "          ";
+    case 6 : 
+        return "            ";
+    case 7 : 
+        return "              ";
+    case 8 : 
+        return "                ";
+    default:
+      return Caml_bytes.bytes_to_string(Bytes.make(n, /* " " */32));
   }
 }
 
@@ -2891,7 +2877,7 @@ function gen_struct(and_, t, sc) {
   return tmp[1];
 }
 
-function gen_sig(_, t, sc) {
+function gen_sig(and_, t, sc) {
   var f = function (type_name) {
     line$1(sc, Curry._2(Printf.sprintf(/* Format */[
                   /* String_literal */Block.__(11, [
@@ -2956,7 +2942,7 @@ var __log__ = /* record */[/* contents */undefined];
 function log(x) {
   var match = __log__[0];
   if (match !== undefined) {
-    return Printf.fprintf(Js_primitive.valFromOption(match), x);
+    return Printf.fprintf(Caml_option.valFromOption(match), x);
   } else {
     return Printf.ifprintf(Pervasives.stdout, x);
   }
@@ -3410,7 +3396,7 @@ function gen_struct$1(and_, t, sc) {
   return true;
 }
 
-function gen_sig$1(_, t, sc) {
+function gen_sig$1(and_, t, sc) {
   var f = function (type_name) {
     line$1(sc, Curry._2(Printf.sprintf(/* Format */[
                   /* String_literal */Block.__(11, [
@@ -3625,7 +3611,7 @@ function min_value(param) {
   if (match !== undefined) {
     var match$1 = param[1];
     if (match$1 !== undefined) {
-      return Js_primitive.some(Caml_obj.caml_min(Js_primitive.valFromOption(match), Js_primitive.valFromOption(match$1)));
+      return Caml_option.some(Caml_obj.caml_min(Caml_option.valFromOption(match), Caml_option.valFromOption(match$1)));
     } else {
       throw [
             Caml_builtin_exceptions.failure,
@@ -3645,7 +3631,7 @@ function eq_value(param) {
   if (match !== undefined) {
     var match$1 = param[1];
     if (match$1 !== undefined) {
-      return Caml_obj.caml_equal(Js_primitive.valFromOption(match), Js_primitive.valFromOption(match$1));
+      return Caml_obj.caml_equal(Caml_option.valFromOption(match), Caml_option.valFromOption(match$1));
     } else {
       throw [
             Caml_builtin_exceptions.failure,
@@ -3674,7 +3660,7 @@ function string_of_option(f, param) {
                           ])
                       ]),
                     "Some(%s)"
-                  ]), Curry._1(f, Js_primitive.valFromOption(param)));
+                  ]), Curry._1(f, Caml_option.valFromOption(param)));
   } else {
     return "None";
   }
@@ -3892,10 +3878,10 @@ function strong_connect(g, sccs, stack, index, v) {
 
 function tarjan(g) {
   var g$1 = reset(g);
-  return fold((function (_, n, param) {
-                  var index = param[2];
-                  var stack = param[1];
-                  var sccs = param[0];
+  return fold((function (param, n, param$1) {
+                  var index = param$1[2];
+                  var stack = param$1[1];
+                  var sccs = param$1[0];
                   var match = n[/* index */1];
                   if (match !== undefined) {
                     return /* tuple */[
@@ -3952,7 +3938,7 @@ function find_field_option(field_options, option_name) {
     }
   }
   if (exit === 1) {
-    return Js_primitive.some(x);
+    return Caml_option.some(x);
   }
   
 }
@@ -4161,7 +4147,7 @@ function compile_default_p2(all_types, field) {
   
 }
 
-function get_default(_, field_options, _$1) {
+function get_default(field_name, field_options, field_type) {
   var exit = 0;
   var constant;
   try {
@@ -4176,7 +4162,7 @@ function get_default(_, field_options, _$1) {
     }
   }
   if (exit === 1) {
-    return Js_primitive.some(constant);
+    return Caml_option.some(constant);
   }
   
 }
@@ -4343,10 +4329,10 @@ function compile_message_p1(file_name, file_options, message_scope, param) {
   var validate_duplicate = function (number_index, field) {
     var number = field_number(field);
     var name = field_name(field);
-    if (not_found((function () {
+    if (not_found((function (param) {
               List.assoc(number, number_index);
               return /* () */0;
-            })) && not_found((function () {
+            })) && not_found((function (param) {
               list_assoc2(name, number_index);
               return /* () */0;
             }))) {
@@ -4944,7 +4930,7 @@ var Codegen_type = /* module */[
 
 function gen_encode_field_key(sc, number, pk, is_packed) {
   var s = string_of_payload_kind(undefined, pk, is_packed);
-  var s$1 = Caml_string.bytes_to_string(Bytes.lowercase(Caml_string.bytes_of_string(s)));
+  var s$1 = Caml_bytes.bytes_to_string(Bytes.lowercase(Caml_bytes.bytes_of_string(s)));
   return line$1(sc, Curry._2(Printf.sprintf(/* Format */[
                       /* String_literal */Block.__(11, [
                           "Pbrt.Encoder.key (",
@@ -4965,7 +4951,7 @@ function gen_encode_field_key(sc, number, pk, is_packed) {
                             ])
                         ]),
                       "Pbrt.Encoder.key (%i, Pbrt.%s) encoder; "
-                    ]), number, Caml_string.bytes_to_string(Bytes.capitalize(Caml_string.bytes_of_string(s$1)))));
+                    ]), number, Caml_bytes.bytes_to_string(Bytes.capitalize(Caml_bytes.bytes_of_string(s$1)))));
 }
 
 function encode_basic_type(bt, pk) {
@@ -5547,7 +5533,7 @@ function gen_struct$3(and_, t, sc) {
   return tmp[1];
 }
 
-function gen_sig$3(_, t, sc) {
+function gen_sig$3(and_, t, sc) {
   var f = function (type_name) {
     line$1(sc, Curry._2(Printf.sprintf(/* Format */[
                   /* String_literal */Block.__(11, [
@@ -6181,7 +6167,7 @@ function gen_sig_record(sc, param) {
   return /* () */0;
 }
 
-function gen_sig$4(_, t, sc) {
+function gen_sig$4(and_, t, sc) {
   var f = function (type_name) {
     line$1(sc, Curry._2(Printf.sprintf(/* Format */[
                   /* String_literal */Block.__(11, [
@@ -6363,13 +6349,13 @@ function fix_ocaml_keyword_conflict(s) {
 
 function constructor_name(s) {
   var s$1 = $$String.concat("_", List.rev(rev_split_by_naming_convention(s)));
-  var s$2 = Caml_string.bytes_to_string(Bytes.lowercase(Caml_string.bytes_of_string(s$1)));
-  return Caml_string.bytes_to_string(Bytes.capitalize(Caml_string.bytes_of_string(s$2)));
+  var s$2 = Caml_bytes.bytes_to_string(Bytes.lowercase(Caml_bytes.bytes_of_string(s$1)));
+  return Caml_bytes.bytes_to_string(Bytes.capitalize(Caml_bytes.bytes_of_string(s$2)));
 }
 
 function label_name_of_field_name(s) {
   var s$1 = $$String.concat("_", List.rev(rev_split_by_naming_convention(s)));
-  return fix_ocaml_keyword_conflict(Caml_string.bytes_to_string(Bytes.lowercase(Caml_string.bytes_of_string(s$1))));
+  return fix_ocaml_keyword_conflict(Caml_bytes.bytes_to_string(Bytes.lowercase(Caml_bytes.bytes_of_string(s$1))));
 }
 
 function module_of_file_name(file_name) {
@@ -6377,7 +6363,7 @@ function module_of_file_name(file_name) {
   var exit = 0;
   var dot_index;
   try {
-    dot_index = Bytes.rindex(Caml_string.bytes_of_string(file_name$1), /* "." */46);
+    dot_index = $$String.rindex(file_name$1, /* "." */46);
     exit = 1;
   }
   catch (exn){
@@ -6682,7 +6668,7 @@ function compile(proto_definition) {
     proto = proto_(lexer, lexbuf);
   }
   catch (raw_exn){
-    var exn = Js_exn.internalToOCamlException(raw_exn);
+    var exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
     throw add_loc(from_lexbuf(lexbuf), exn);
   }
   var all_pbtt_msgs = compile_proto_p1("tmp.proto", proto);
@@ -7059,7 +7045,7 @@ function eq(loc, x, y) {
   suites[0] = /* :: */[
     /* tuple */[
       loc + (" id " + String(test_id[0])),
-      (function () {
+      (function (param) {
           return /* Eq */Block.__(0, [
                     x,
                     y
@@ -7075,6 +7061,6 @@ eq("File \"ocaml_protc_test.ml\", line 10, characters 5-12", match[0], "(** tmp.
 
 eq("File \"ocaml_protc_test.ml\", line 46, characters 5-12", match[1], "[@@@ocaml.warning \"-30\"]\n\ntype t = {\n  j : int32;\n}\n\nand t_mutable = {\n  mutable j : int32;\n}\n\nlet rec default_t \n  ?j:((j:int32) = 0l)\n  () : t  = {\n  j;\n}\n\nand default_t_mutable () : t_mutable = {\n  j = 0l;\n}\n\nlet rec decode_t d =\n  let v = default_t_mutable () in\n  let rec loop () = \n    match Pbrt.Decoder.key d with\n    | None -> (\n    )\n    | Some (1, Pbrt.Varint) -> (\n      v.j <- Pbrt.Decoder.int32_as_varint d;\n      loop ()\n    )\n    | Some (1, pk) -> raise (\n      Protobuf.Decoder.Failure (Protobuf.Decoder.Unexpected_payload (\"Message(t), field(1)\", pk))\n    )\n    | Some (n, payload_kind) -> Pbrt.Decoder.skip d payload_kind; loop ()\n  in\n  loop ();\n  let v:t = Obj.magic v in\n  v\n\nlet rec encode_t (v:t) encoder = \n  Pbrt.Encoder.key (1, Pbrt.Varint) encoder; \n  Pbrt.Encoder.int32_as_varint v.j encoder;\n  ()\n\nlet rec pp_t fmt (v:t) = \n  let pp_i fmt () =\n    Format.pp_open_vbox fmt 1;\n    Pbrt.Pp.pp_record_field \"j\" Pbrt.Pp.pp_int32 fmt v.j;\n    Format.pp_close_box fmt ()\n  in\n  Pbrt.Pp.pp_brk pp_i fmt ()\n");
 
-Mt.from_pair_suites("ocaml_protc_test.ml", suites[0]);
+Mt.from_pair_suites("Ocaml_proto_test", suites[0]);
 
 /*  Not a pure module */

@@ -8,7 +8,7 @@ let eq loc (x, y) =
 
 
 external joinClasses : int array  -> int = "./joinClasses"
-  [@@bs.module] [@@bs.splice]
+  [@@bs.module] [@@bs.variadic]
 
 
 let a =
@@ -21,4 +21,4 @@ let () =
   eq __LOC__ pair
 
 let () =
-  Mt.from_pair_suites  __FILE__ !suites
+  Mt.from_pair_suites  __MODULE__ !suites

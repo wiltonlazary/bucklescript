@@ -24,6 +24,11 @@
 
 
 type 'a  lit = ?loc: Location.t -> unit -> 'a
+
+val predef_option : Longident.t 
+val predef_some : Longident.t 
+val predef_none : Longident.t 
+
 module Lid : sig
   type t = Longident.t 
   val val_unit : t 
@@ -39,7 +44,7 @@ module Lid : sig
   val js_undefined : t
   val js_null_undefined : t 
   val js_re_id : t 
-  val js_unsafe : t 
+  val js_internal : t 
 end
 
 type expression_lit = Parsetree.expression lit 

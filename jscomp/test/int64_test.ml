@@ -129,9 +129,9 @@ let suites :  Mt.pair_suites = Mt.[
         Eq(Array.map Int64.to_int32
              [|0L; 0x0000_0000_8000_0000L|], [|0l;-2147483648l|]));
     "discard_sign", (fun _ ->
-        Eq(Js_int64.discard_sign (-1L), 0x7fff_ffff_ffff_ffffL));
-    "div_mod", (fun _ -> Eq(Js_int64.div_mod 7L 3L , (2L,1L)));
-    "to_hex", (fun _ -> Eq(Js_int64.to_hex (-1L), "ffffffffffffffff"));
+        Eq(Caml_int64.discard_sign (-1L), 0x7fff_ffff_ffff_ffffL));
+    "div_mod", (fun _ -> Eq(Caml_int64.div_mod 7L 3L , (2L,1L)));
+    "to_hex", (fun _ -> Eq(Caml_int64.to_hex (-1L), "ffffffffffffffff"));
     "generic_compare", (fun _ ->
         Eq(generic_compare 0x0000_0001_0000_0000L 0x0000_0000_0000_0001L > 0 , true));
     "test_compier_literal", (fun _ ->
@@ -166,6 +166,18 @@ let suites :  Mt.pair_suites = Mt.[
 
 
 
+let suites = ref suites
+let test_id = ref 0
+let eq loc x y = Mt.eq_suites ~test_id ~suites loc x y 
 
+let id loc (x : int64) =  
+  eq loc (Int64.bits_of_float (Int64.float_of_bits x)) x 
+let () = 
+  eq __LOC__ (Int64.bits_of_float 0.3) 4599075939470750515L;
+  eq __LOC__ (Int64.float_of_bits 4599075939470750515L) 0.3;
+  id __LOC__ (-1L);
+  id __LOC__ (-100L);
+  id __LOC__ 0xff_ff_ff_ffL;
+  id __LOC__ 0x1f_ff_ff_ffL
 
-;; Mt.from_pair_suites __FILE__ suites
+;; Mt.from_pair_suites __MODULE__ !suites

@@ -162,7 +162,7 @@ let for_all_from s start  p =
   else unsafe_for_all_range s ~start ~finish:(len - 1) p 
 
 
-let for_all (p : char -> bool) s =   
+let for_all s (p : char -> bool)  =   
   unsafe_for_all_range s ~start:0  ~finish:(String.length s - 1) p 
 
 let is_empty s = String.length s = 0
@@ -243,6 +243,44 @@ let tail_from s x =
 
 let equal (x : string) y  = x = y
 
+let rec index_rec s lim i c =
+  if i >= lim then -1 else
+  if String.unsafe_get s i = c then i 
+  else index_rec s lim (i + 1) c
+
+let rec index_rec_count s lim i c count =
+  if i >= lim then -1 else
+  if String.unsafe_get s i = c then 
+    if count = 1 then i 
+    else index_rec_count s lim (i + 1) c (count - 1)
+  else index_rec_count s lim (i + 1) c count
+
+let index_count s i c count =     
+  let lim = String.length s in 
+  if i < 0 || i >= lim || count < 1 then 
+    Ext_pervasives.invalid_argf "index_count: (%d,%d)"  i count;
+
+  index_rec_count s lim i c count 
+let extract_until s cursor c =       
+  let len = String.length s in   
+  let start = !cursor in 
+  if start < 0 || start >= len then (
+    cursor := -1;
+    ""
+    )
+  else 
+    let i = index_rec s len start c in   
+    let finish = 
+      if i < 0 then (      
+        cursor := -1 ;
+        len 
+      )
+      else (
+        cursor := i + 1;
+        i 
+      ) in 
+    String.sub s start (finish - start)
+  
 let rec rindex_rec s i c =
   if i < 0 then i else
   if String.unsafe_get s i = c then i else rindex_rec s (i - 1) c;;
@@ -318,6 +356,11 @@ let no_slash x =
 let no_slash_idx x = 
   unsafe_no_char_idx x '/' 0 (String.length x - 1)
 
+let no_slash_idx_from x from = 
+  let last_idx = String.length x - 1  in 
+  assert (from >= 0); 
+  unsafe_no_char_idx x '/' from last_idx
+
 let replace_slash_backward (x : string ) = 
   let len = String.length x in 
   if unsafe_no_char x '/' 0  (len - 1) then x 
@@ -337,7 +380,9 @@ let replace_backward_slash (x : string)=
 let empty = ""
 
 #if BS_COMPILER_IN_BROWSER then
-let compare = Bs_hash_stubs.string_length_based_compare    
+let compare = Bs_hash_stubs.string_length_based_compare
+#elif OCAML_VERSION =~ ">4.3.0" then
+external compare : string -> string -> int = "caml_string_length_based_compare" [@@noalloc];;    
 #else    
 external compare : string -> string -> int = "caml_string_length_based_compare" "noalloc";;
 #end
@@ -452,7 +497,23 @@ let capitalize_ascii (s : string) : string =
       else s 
     end
 
+let uncapitalize_ascii =
+#if OCAML_VERSION =~ ">4.3.0" then
+    String.uncapitalize_ascii
+#else
+    String.uncapitalize
+#end      
 
+
+#if OCAML_VERSION =~ ">4.03.0" then 
+let lowercase_ascii = String.lowercase_ascii
+#else
+
+
+let lowercase_ascii (s : string) = 
+    Bytes.unsafe_to_string 
+      (Bytes.map Ext_char.lowercase_ascii (Bytes.unsafe_of_string s))
+#end
 
 
 

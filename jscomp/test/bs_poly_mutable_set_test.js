@@ -28,7 +28,7 @@ function fromArray(param) {
   return Belt_MutableSet.fromArray(param, IntCmp);
 }
 
-function empty() {
+function empty(param) {
   return {
           cmp: IntCmp[/* cmp */0],
           data: Belt_internalAVLset.empty
@@ -314,7 +314,7 @@ Belt_List.forEach(/* :: */[
         return Belt_internalAVLset.checkInvariantInternal(x.data);
       }));
 
-Mt.from_pair_suites("bs_poly_mutable_set_test.ml", suites[0]);
+Mt.from_pair_suites("Bs_poly_mutable_set_test", suites[0]);
 
 var N = 0;
 

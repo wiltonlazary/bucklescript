@@ -21,7 +21,7 @@ function add_test(loc, test) {
 }
 
 function eq(loc, x, y) {
-  return add_test(loc, (function () {
+  return add_test(loc, (function (param) {
                 return /* Eq */Block.__(0, [
                           x,
                           y
@@ -39,7 +39,7 @@ eq("File \"js_cast_test.ml\", line 19, characters 12-19", 1, 1.0);
 
 eq("File \"js_cast_test.ml\", line 21, characters 12-19", 123456789, 123456789.0);
 
-Mt.from_pair_suites("js_cast_test.ml", suites[0]);
+Mt.from_pair_suites("Js_cast_test", suites[0]);
 
 exports.suites = suites;
 exports.add_test = add_test;
